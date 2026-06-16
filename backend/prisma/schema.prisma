@@ -1,0 +1,79 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   // Admin, Reception
+  status    String   // Active, Inactive
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Patient {
+  id            String   @id @default(uuid())
+  uhid          String   @unique
+  name          String
+  husbandName   String
+  age           Int
+  gender        String
+  mobileNumber  String
+  address       String
+  doctorName    String
+  admissionDate DateTime
+  dischargeDate DateTime?
+  bills         Bill[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Package {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  category    String   // IVF / ICSI / FET, Donor Programmes, Surgical Procedures, Cryostorage, Embryo Pooling
+  price       Float
+  description String
+  inclusions  String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AddOn {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  price     Float
+  category  String
+  status    String   // Active, Inactive
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Bill {
+  id                String   @id @default(uuid())
+  billNo            String   @unique
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id])
+  packageName       String
+  packagePrice      Float
+  addOns            Json     // Array of {name: string, price: number}
+  roomCharges       Float
+  additionalCharges Float
+  discount          Float
+  taxAmount         Float
+  grandTotal        Float
+  date              DateTime @default(now())
+  status            String   // Paid, Pending, Partially Paid
+  billingNotes      String?
+  doctorName        String
+  roomNo            String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
