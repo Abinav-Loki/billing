@@ -50,6 +50,7 @@ export interface Bill {
   billingMethod?: "full_payment" | "item_wise"
   selectedLineItems?: { id: string; name: string; price: number; category: string; qty: number }[]
   categoryName?: string
+  exclusions?: string[]
 }
 
 export interface User {

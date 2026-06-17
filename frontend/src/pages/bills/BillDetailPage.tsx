@@ -246,6 +246,49 @@ export function BillDetailPage() {
             </tbody>
           </table>
 
+          {/* Inclusions and Exclusions (for package bills) */}
+          {pkg && (
+            <div className="mt-6 border-t pt-4 space-y-4">
+              {/* Inclusions */}
+              {pkg.inclusionsList && pkg.inclusionsList.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                    Package Inclusions (All Included)
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-750 dark:text-slate-300">
+                    {pkg.inclusionsList.map((inc, i) => (
+                      <div key={i} className="flex items-start gap-1.5">
+                        <span className="h-4 w-4 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-full flex items-center justify-center text-[9px] shrink-0 mt-0.5">
+                          ✓
+                        </span>
+                        <span>{inc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Custom Exclusions (rendered if bill has saved exclusions) */}
+              {bill.exclusions && bill.exclusions.length > 0 && (
+                <div className="border-t pt-4">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                    Package Exclusions (Billed Separately)
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-slate-400">
+                    {bill.exclusions.map((excl, i) => (
+                      <div key={i} className="flex items-start gap-1.5 p-1.5 bg-slate-50/50 dark:bg-slate-900/10 border border-dashed rounded-lg">
+                        <span className="h-3.5 w-3.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex items-center justify-center text-[9px] shrink-0 font-bold mt-0.5">
+                          —
+                        </span>
+                        <span>{excl}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Totals */}
           <div className="flex justify-end">
             <div className="w-64 space-y-2 text-xs border-t-2 border-slate-200 dark:border-slate-700 pt-4">
@@ -272,9 +315,22 @@ export function BillDetailPage() {
             </div>
           </div>
 
+          {/* Billing Rule Disclaimer Note (MUST appear on every bill) */}
+          <div className="mt-6 border-t pt-4 text-[10px] text-slate-500 bg-slate-50/60 p-3.5 rounded-xl border border-slate-200">
+            <p className="font-bold uppercase text-[9px] tracking-wide text-slate-600 mb-1">Clinic Billing Rule:</p>
+            <p className="italic leading-normal">
+              Consultation and monitoring scans included in OPU / egg collection packages and FET packages should not be billed separately. Room stay is optional unless specifically advised.
+            </p>
+            {bill.exclusions && bill.exclusions.length > 0 && (
+              <p className="mt-2 font-medium">
+                Note: Final bill may vary only when additional investigations, medications, room stay, or clinician-approved add-on is documented.
+              </p>
+            )}
+          </div>
+
           {/* Notes */}
           {bill.billingNotes && (
-            <div className="p-3 bg-slate-50 dark:bg-slate-900 border rounded-xl text-xs text-slate-600 dark:text-slate-400">
+            <div className="p-3 bg-slate-50 dark:bg-slate-900 border rounded-xl text-xs text-slate-600 dark:text-slate-400 mt-4">
               <p className="font-bold uppercase text-[9px] text-muted-foreground mb-1">Notes</p>
               {bill.billingNotes}
             </div>

@@ -34,6 +34,9 @@ export interface PackageMaster {
   lineItems: BillLineItem[]
   duplicateBlockList?: string[]
   staffNote?: string
+  billingNote?: string
+  inclusionsList?: string[]
+  exclusionsList?: string[]
 }
 
 export interface AddOnItem {
@@ -317,17 +320,11 @@ const PKG_3CYCLE_ITEMS: BillLineItem[] = [
   { id: "PKG-3CYCLE-10", name: "Two FETs included",        price: 27272, category: "Procedure", isOptional: false },
 ]
 
-// ── Charity ───────────────────────────────────────────────────────────────────
-
 const PKG_CHARITY_ITEMS: BillLineItem[] = [
   { id: "PKG-CHARITY-0", name: "Reduced package cost",           price: 30000, category: "Procedure", isOptional: false },
   { id: "PKG-CHARITY-1", name: "Free monitoring consultations",  price: 30000, category: "Procedure", isOptional: false },
   { id: "PKG-CHARITY-2", name: "Free follicular scans",          price: 30000, category: "Procedure", isOptional: false },
 ]
-
-// ═════════════════════════════════════════════════════════════════════════════
-// PACKAGE MASTER — Full Registry
-// ═════════════════════════════════════════════════════════════════════════════
 
 export const PACKAGE_MASTER: PackageMaster[] = [
 
@@ -340,6 +337,28 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     fullPaymentAmount: 100000,
     description: "OPU + ICSI + Blastocyst Culture + 1-year storage + Fresh ET.",
     staffNote: "OPU + ICSI + blastocyst culture + 1-year storage + fresh ET. Consultations and follicular scans during stimulation included. Excludes: stimulation medicines, pre-cycle hormones, serology, ECG, Echo, PAC, blood tests, semen workup.",
+    billingNote: "OPU + ICSI + blastocyst culture + 1-year storage + fresh ET. Consultations and follicular scans during stimulation included.",
+    inclusionsList: [
+      "OPU (ovum pick-up) procedure",
+      "OT charges / theatre fee",
+      "Anaesthetist fee + sedation / anaesthesia drugs",
+      "Embryologist fee",
+      "Sperm preparation for ICSI",
+      "ICSI procedure",
+      "Blastocyst culture (Day 5 — all fertilised embryos)",
+      "Vitrification + 1-year cryostorage (2 cryolocks included)",
+      "Fresh embryo transfer — 1 attempt (same cycle, if applicable)",
+      "Consumables + pap smear + administrative charges",
+      "Monitoring consultations + follicular scans during stimulation"
+    ],
+    exclusionsList: [
+      "Stimulation medications",
+      "Pre-cycle hormonal blood tests",
+      "Workup blood tests (CBC, coagulation, RFT)",
+      "ECG, Echocardiogram, Pre-anaesthesia checkup",
+      "Semen analysis + andrology workup",
+      "Serology panel (HIV, HBsAg, HCV, VDRL)"
+    ],
     lineItems: PKG_ICSI_BASIC_ITEMS,
     duplicateBlockList: ["OPU", "OT charges", "Anaesthetist", "Embryologist", "ICSI procedure", "Blastocyst", "Vitrification", "embryo transfer", "Monitoring"],
   },
@@ -351,6 +370,28 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     fullPaymentAmount: 110000,
     description: "OPU + MF or PICSI + Blastocyst + Fresh ET.",
     staffNote: "ICSI Basic + either MF or PICSI. One sperm selection method included. Confirm which method (MF / PICSI) at consultation before billing. Excludes: stimulation medicines, pre-cycle hormones, serology, ECG, Echo, PAC, blood tests, semen workup.",
+    billingNote: "ICSI Basic + either MF or PICSI. One sperm selection method included.",
+    inclusionsList: [
+      "OPU (ovum pick-up) procedure",
+      "OT charges / theatre fee",
+      "Anaesthetist fee + sedation / anaesthesia drugs",
+      "Embryologist fee",
+      "Sperm preparation — advanced selection",
+      "MF (microfluidic) OR PICSI — one selected at consultation (₹10,000 included)",
+      "ICSI procedure",
+      "Blastocyst culture (Day 5 — all fertilised embryos)",
+      "Vitrification + 1-year cryostorage (2 cryolocks included)",
+      "Fresh embryo transfer — 1 attempt",
+      "Consumables + pap smear + administrative charges",
+      "Monitoring consultations + follicular scans during stimulation"
+    ],
+    exclusionsList: [
+      "Stimulation medications",
+      "Pre-cycle hormonal blood tests",
+      "Workup blood tests, ECG, Echo, Pre-anaesthesia checkup",
+      "Semen analysis + andrology workup",
+      "Serology panel"
+    ],
     lineItems: PKG_ICSI_ADV_ITEMS,
     duplicateBlockList: ["OPU", "OT charges", "Anaesthetist", "Embryologist", "ICSI procedure", "Blastocyst", "Vitrification", "embryo transfer", "Monitoring", "MF", "PICSI"],
   },
@@ -362,6 +403,26 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     fullPaymentAmount: 250000,
     description: "OPU + ICSI + PGT-A (up to 4 embryos) + 1-year storage + 1 FET included.",
     staffNote: "OPU + ICSI + PGT-A package. Embryos beyond the package inclusion (4 embryos) billed separately at ₹25,000 per additional embryo. Excludes: stimulation medicines, pre-cycle hormones, serology, ECG, Echo, PAC, blood tests, semen workup.",
+    billingNote: "OPU + ICSI + PGT-A package. Add-ons / embryos beyond package inclusion to be billed separately if documented.",
+    inclusionsList: [
+      "OPU (ovum pick-up) procedure",
+      "OT charges / theatre fee",
+      "Anaesthetist fee + sedation / anaesthesia drugs",
+      "Embryologist fee",
+      "Sperm preparation for ICSI",
+      "ICSI procedure",
+      "Blastocyst culture (Day 5 — all fertilised embryos)",
+      "PGT-A — biopsy + genetic testing (up to 4 embryos, package rate)",
+      "Vitrification + 1-year cryostorage",
+      "1 × FET — includes anaesthesia + embryo glue (₹40,000)",
+      "Consumables + pap smear",
+      "Monitoring consultations + follicular scans during stimulation"
+    ],
+    exclusionsList: [
+      "Stimulation medications",
+      "Investigations",
+      "MF or PICSI if required"
+    ],
     lineItems: PKG_ICSI_PGT_ITEMS,
     duplicateBlockList: ["OPU", "OT charges", "Anaesthetist", "Embryologist", "ICSI procedure", "Blastocyst", "Vitrification", "FET", "PGT-A", "Monitoring", "Pap smear"],
   },
@@ -373,6 +434,22 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     fullPaymentAmount: 35000,
     description: "Embryo thaw + embryologist + OT + consumables + monitoring | No sedation.",
     staffNote: "Embryo thaw + embryologist + OT + catheter + ultrasound guidance + embryo glue + monitoring. Excludes: endometrial preparation medicines, luteal support medicines, additional hormone tests, Beta-hCG, post-transfer scan.",
+    billingNote: "Embryo thaw + embryologist + OT + catheter + ultrasound guidance + embryo glue + monitoring.",
+    inclusionsList: [
+      "Embryo thaw (per cryolock / straw)",
+      "Embryologist fee",
+      "OT / procedure room charges",
+      "Transfer catheter & consumables",
+      "Ultrasound guidance during transfer",
+      "Embryo glue (EG) — included as standard",
+      "Endometrial preparation monitoring scans + consultations"
+    ],
+    exclusionsList: [
+      "Endometrial preparation medications (estradiol, progesterone)",
+      "Luteal phase support medications post-transfer",
+      "Additional hormonal blood tests (E2, progesterone, beta hCG)",
+      "Post-transfer follow-up scan"
+    ],
     lineItems: PKG_FET_NOANA_ITEMS,
     duplicateBlockList: ["Embryo thaw", "Embryologist", "OT", "Transfer catheter", "Ultrasound guidance", "Embryo glue", "Endometrial preparation"],
   },
@@ -384,28 +461,68 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     fullPaymentAmount: 40000,
     description: "Embryo thaw + embryologist + OT + anaesthesia + consumables + monitoring | Sedation included.",
     staffNote: "FET package with anaesthetist fee and sedation / anaesthesia drugs included. Excludes: endometrial preparation medicines, luteal support medicines, additional hormone tests, Beta-hCG, post-transfer scan.",
+    billingNote: "FET package with anaesthetist fee and sedation / anaesthesia drugs included.",
+    inclusionsList: [
+      "Embryo thaw (per cryolock / straw)",
+      "Embryologist fee",
+      "OT charges / theatre fee",
+      "Anaesthetist fee + anaesthesia drugs",
+      "Transfer catheter & consumables",
+      "Ultrasound guidance during transfer",
+      "Embryo glue (EG) — included as standard",
+      "Endometrial preparation monitoring scans + consultations"
+    ],
+    exclusionsList: [
+      "Endometrial preparation medications",
+      "Luteal phase support medications",
+      "Additional hormonal blood tests",
+      "Post-transfer follow-up scan"
+    ],
     lineItems: PKG_FET_ANA_ITEMS,
     duplicateBlockList: ["Embryo thaw", "Embryologist", "OT", "Anaesthetist", "Transfer catheter", "Ultrasound guidance", "Embryo glue", "Endometrial preparation"],
   },
 
   {
     id: "PKG-FET-ROOM",
-    name: "FET Room Package / 15-Day Stay",
+    name: "FET Room / 15-day stay",
     category: "IVF / ICSI / FET",
     fullPaymentAmount: 45000,
-    description: "FET with 15-day stay when opted / advised by clinician.",
+    description: "15-day stay package, when opted / advised.",
     staffNote: "15-day stay package when opted/advised. Confirm clinician approval before billing. Includes all FET with anaesthesia components + room stay. Excludes: endometrial preparation medicines, luteal support medicines, additional hormone tests, Beta-hCG, post-transfer scan.",
+    billingNote: "15-day stay package, when opted / advised.",
+    inclusionsList: [
+      "FET procedure (with anaesthesia)",
+      "15-day room stay (single room)",
+      "Nursing charges during stay",
+      "Monitoring scans + consultations during stay"
+    ],
+    exclusionsList: [
+      "Endometrial preparation medications",
+      "Luteal phase support medications",
+      "Post-transfer follow-up scan"
+    ],
     lineItems: PKG_FET_ROOM_ITEMS,
     duplicateBlockList: ["Embryo thaw", "Embryologist", "OT", "Anaesthetist", "Transfer catheter", "Ultrasound guidance", "Embryo glue", "room stay"],
   },
 
   {
     id: "PKG-ROOM-SINGLE",
-    name: "Single Room",
+    name: "Single room (per day)",
     category: "IVF / ICSI / FET",
     fullPaymentAmount: 5000,
-    description: "Single Room (per night).",
+    description: "Single Room (per day).",
     staffNote: "Charged per night. Confirm number of nights at billing.",
+    billingNote: "Single room stay per day.",
+    inclusionsList: [
+      "Single room accommodation (per day)",
+      "Nursing support",
+      "Room consumables & housekeeping"
+    ],
+    exclusionsList: [
+      "Food & beverages",
+      "Medications",
+      "Special clinical diagnostics"
+    ],
     lineItems: PKG_ROOM_SINGLE_ITEMS,
     duplicateBlockList: [],
   },
@@ -417,6 +534,29 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     fullPaymentAmount: 105000,
     description: "All ICSI Basic inclusions + Monitoring consultations + Single room (1 night).",
     staffNote: "Bundled option: ICSI Basic + 1 night single room stay. Use only when room stay is confirmed.",
+    billingNote: "OPU + ICSI + blastocyst culture + 1-year storage + fresh ET + 1 night Single Room stay.",
+    inclusionsList: [
+      "OPU (ovum pick-up) procedure",
+      "OT charges / theatre fee",
+      "Anaesthetist fee + sedation / anaesthesia drugs",
+      "Embryologist fee",
+      "Sperm preparation for ICSI",
+      "ICSI procedure",
+      "Blastocyst culture (Day 5 — all fertilised embryos)",
+      "Vitrification + 1-year cryostorage (2 cryolocks included)",
+      "Fresh embryo transfer — 1 attempt (same cycle, if applicable)",
+      "Consumables + pap smear + administrative charges",
+      "Monitoring consultations + follicular scans during stimulation",
+      "Single room accommodation (1 night)"
+    ],
+    exclusionsList: [
+      "Stimulation medications",
+      "Pre-cycle hormonal blood tests",
+      "Workup blood tests (CBC, coagulation, RFT)",
+      "ECG, Echocardiogram, Pre-anaesthesia checkup",
+      "Semen analysis + andrology workup",
+      "Serology panel"
+    ],
     lineItems: PKG_ROOM_ICSI_BASIC_ITEMS,
     duplicateBlockList: ["OPU", "OT charges", "Anaesthetist", "Embryologist", "ICSI procedure", "Blastocyst", "Vitrification", "embryo transfer", "Monitoring", "Single room"],
   },
@@ -428,6 +568,29 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     fullPaymentAmount: 115000,
     description: "All ICSI Advanced inclusions + Monitoring consultations + Single room (1 night).",
     staffNote: "Bundled option: ICSI Advanced + 1 night single room stay. Confirm MF / PICSI selection before billing.",
+    billingNote: "ICSI Basic + either MF or PICSI + 1 night Single Room stay.",
+    inclusionsList: [
+      "OPU (ovum pick-up) procedure",
+      "OT charges / theatre fee",
+      "Anaesthetist fee + sedation / anaesthesia drugs",
+      "Embryologist fee",
+      "Sperm preparation — advanced selection",
+      "MF (microfluidic) OR PICSI — one selected at consultation (₹10,000 included)",
+      "ICSI procedure",
+      "Blastocyst culture (Day 5 — all fertilised embryos)",
+      "Vitrification + 1-year cryostorage (2 cryolocks included)",
+      "Fresh embryo transfer — 1 attempt",
+      "Consumables + pap smear + administrative charges",
+      "Monitoring consultations + follicular scans during stimulation",
+      "Single room accommodation (1 night)"
+    ],
+    exclusionsList: [
+      "Stimulation medications",
+      "Pre-cycle hormonal blood tests",
+      "Workup blood tests, ECG, Echo, Pre-anaesthesia checkup",
+      "Semen analysis + andrology workup",
+      "Serology panel"
+    ],
     lineItems: PKG_ROOM_ICSI_ADV_ITEMS,
     duplicateBlockList: ["OPU", "OT charges", "Anaesthetist", "Embryologist", "ICSI procedure", "Blastocyst", "Vitrification", "embryo transfer", "Monitoring", "Single room", "MF", "PICSI"],
   },
@@ -439,6 +602,27 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     fullPaymentAmount: 255000,
     description: "All ICSI + PGT-A inclusions + Monitoring consultations + Single room (1 night).",
     staffNote: "Bundled option: ICSI + PGT-A + 1 night single room stay. Embryos beyond 4 billed separately.",
+    billingNote: "OPU + ICSI + PGT-A package + 1 night Single Room stay.",
+    inclusionsList: [
+      "OPU (ovum pick-up) procedure",
+      "OT charges / theatre fee",
+      "Anaesthetist fee + sedation / anaesthesia drugs",
+      "Embryologist fee",
+      "Sperm preparation for ICSI",
+      "ICSI procedure",
+      "Blastocyst culture (Day 5 — all fertilised embryos)",
+      "PGT-A — biopsy + genetic testing (up to 4 embryos, package rate)",
+      "Vitrification + 1-year cryostorage",
+      "1 × FET — includes anaesthesia + embryo glue (₹40,000)",
+      "Consumables + pap smear",
+      "Monitoring consultations + follicular scans during stimulation",
+      "Single room accommodation (1 night)"
+    ],
+    exclusionsList: [
+      "Stimulation medications",
+      "Investigations",
+      "MF or PICSI if required"
+    ],
     lineItems: PKG_ROOM_ICSI_PGT_ITEMS,
     duplicateBlockList: ["OPU", "OT charges", "Anaesthetist", "Embryologist", "ICSI procedure", "Blastocyst", "Vitrification", "FET", "PGT-A", "Monitoring", "Pap smear", "Single room"],
   },
@@ -451,7 +635,30 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     category: "Donor Programmes",
     fullPaymentAmount: 300000,
     description: "Full donor egg programme — donor recruitment, stimulation, OPU, ICSI, blastocyst culture, vitrification, 1-year storage.",
-    staffNote: "⚠ FET IS EXCLUDED. FET must be billed separately. Package covers: donor recruitment, donor screening, donor stimulation, OPU, ICSI with husband sperm, blastocyst culture, vitrification, 1-year storage. Excludes: recipient medicines, recipient serology, recipient hormonal monitoring, FET charges, add-ons beyond included services.",
+    staffNote: "Covered: donor recruitment, screening, stimulation, OPU, ICSI, blastocyst culture, vitrification, 1-year storage. Excludes: recipient medications, recipient serology, recipient hormonal monitoring, FET.",
+    billingNote: "Donor recruitment, donor screening, donor stimulation, OPU, ICSI with husband sperm, blastocyst culture, vitrification and 1-year storage. FET excluded and billed separately.",
+    inclusionsList: [
+      "Donor recruitment, screening & eligibility assessment",
+      "Donor blood investigations — hormones, AMH, AFC",
+      "Donor serology — HIV, HBsAg, HCV, VDRL",
+      "Donor ECG + echocardiogram",
+      "Donor pre-anaesthesia / anaesthetic checkup",
+      "Donor psychological counselling + consent",
+      "Donor ovarian stimulation — all medications included",
+      "Donor monitoring consultations + follicular scans",
+      "Donor OPU + OT charges + anaesthesia + embryologist fee",
+      "ICSI procedure — recipient partner sperm",
+      "Blastocyst culture (Day 5)",
+      "Embryo vitrification + cryolocks + 1-year cryostorage",
+      "Legal & consent documentation (ART Act 2021)",
+      "Administrative + coordination charges"
+    ],
+    exclusionsList: [
+      "Recipient endometrial preparation medicines",
+      "Recipient post-FET luteal support medicines",
+      "Recipient blood tests and serology",
+      "FET (billed separately at ₹40,000)"
+    ],
     lineItems: PKG_DONOR_EGG_ITEMS,
     duplicateBlockList: ["Donor recruitment", "Donor stimulation", "Donor OPU", "OT charges", "Anaesthetist", "Embryologist", "ICSI", "Blastocyst", "Vitrification", "cryostorage"],
   },
@@ -462,29 +669,57 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     category: "Donor Programmes",
     fullPaymentAmount: 320000,
     description: "Donor embryo programme — donor couple recruitment, screening, ICSI cycle or embryos, matching, documentation.",
-    staffNote: "⚠ Recipient FET is EXCLUDED. FET must be billed separately. Package covers: donor couple recruitment, screening, donor ICSI cycle or embryos, matching, documentation. Excludes: recipient medicines, recipient serology, recipient hormonal monitoring, FET charges, add-ons beyond included services.",
+    staffNote: "⚠ Recipient FET is EXCLUDED. FET must be billed separately. Package covers: donor couple recruitment, screening, donor ICSI cycle or embryos, matching, documentation.",
+    billingNote: "Donor couple recruitment / screening, donor ICSI cycle or embryos, matching and documentation. Recipient FET is excluded and billed separately.",
+    inclusionsList: [
+      "Donor couple recruitment + screening",
+      "Matching and documentation",
+      "Donor ICSI cycle or embryos",
+      "Legal & consent documentation (ART Act 2021)"
+    ],
+    exclusionsList: [
+      "Recipient FET (billed separately at ₹40,000)",
+      "Recipient medicines + serology"
+    ],
     lineItems: PKG_DONOR_EMBRYO_ITEMS,
     duplicateBlockList: ["Donor couple", "Screening", "ICSI cycle", "Embryo allocation", "Matching", "Administrative", "Recipient endometrial", "Embryologist", "Embryo thaw", "Consumables"],
   },
 
   {
     id: "PKG-DONOR-ADVANCE",
-    name: "Package Advance – Donor Recruitment",
+    name: "Package advance — donor recruitment",
     category: "Donor Programmes",
     fullPaymentAmount: 200000,
     description: "Advance payment collected before donor recruitment begins.",
     staffNote: "Collect before donor recruitment. Non-refundable once recruitment is initiated. Balance of ₹1,00,000 due after recruitment, before donor OPU.",
+    billingNote: "Donor recruitment advance payment.",
+    inclusionsList: [
+      "Donor recruitment screening and matching co-ordination"
+    ],
+    exclusionsList: [
+      "Donor stimulation medications",
+      "OPU procedure",
+      "ICSI & lab procedures"
+    ],
     lineItems: PKG_DONOR_ADVANCE_ITEMS,
     duplicateBlockList: [],
   },
 
   {
     id: "PKG-DONOR-BALANCE",
-    name: "After Donor Recruitment (Balance Payment)",
+    name: "Balance donor recruitment payment",
     category: "Donor Programmes",
     fullPaymentAmount: 100000,
     description: "Balance donor payment collected after recruitment, before donor OPU.",
-    staffNote: "Balance donor payment. Full package payment required before donor OPU is scheduled. Do NOT proceed with OPU until this payment is confirmed.",
+    staffNote: "Balance donor payment. Full package payment required before donor OPU is scheduled.",
+    billingNote: "Balance donor recruitment payment.",
+    inclusionsList: [
+      "Complete donor stimulation cycle scheduling and coordination"
+    ],
+    exclusionsList: [
+      "Recipient FET (billed separately at ₹40,000)",
+      "Recipient medicines"
+    ],
     lineItems: PKG_DONOR_BALANCE_ITEMS,
     duplicateBlockList: [],
   },
@@ -493,33 +728,79 @@ export const PACKAGE_MASTER: PackageMaster[] = [
 
   {
     id: "PKG-DIAG-LAP",
-    name: "Diagnostic Laparoscopy",
+    name: "Diagnostic laparoscopy",
     category: "Surgical / Procedure Packages",
     fullPaymentAmount: 75000,
     description: "Diagnostic laparoscopy under general anaesthesia.",
-    staffNote: "Package includes: surgeon fee, OT, GA, anaesthetist, scrub nurse, consumables, day care, nursing, post-op review. Excludes: histopathology / biopsy, overnight room stay, post-op medicines / antibiotics, additional operative intervention — all billed separately.",
+    staffNote: "Package includes: surgeon fee, OT, GA, anaesthetist, scrub nurse, consumables, day care, nursing, post-op review.",
+    billingNote: "Surgeon fee, major OT, GA, anaesthetist, OT staff, consumables, day-care recovery, nursing and 1 post-op review included.",
+    inclusionsList: [
+      "Surgeon fee",
+      "OT charges / theatre fee (major)",
+      "General anaesthesia (GA)",
+      "Anaesthetist fee",
+      "Scrub nurse / OT staff",
+      "Surgical consumables pack",
+      "Day care / recovery room",
+      "Nursing charges",
+      "Post-op review (1 visit)"
+    ],
+    exclusionsList: [
+      "Histopathology / tissue biopsy",
+      "Overnight IP stay — room charges",
+      "Operative intervention if findings require"
+    ],
     lineItems: PKG_DIAG_LAP_ITEMS,
     duplicateBlockList: ["Surgeon", "OT", "General anaesthesia", "Anaesthetist", "Scrub nurse", "Consumables", "Day care", "Nursing", "Post-op"],
   },
 
   {
     id: "PKG-DIAG-HYST",
-    name: "Diagnostic Hysteroscopy",
+    name: "Diagnostic hysteroscopy",
     category: "Surgical / Procedure Packages",
     fullPaymentAmount: 40000,
     description: "Diagnostic hysteroscopy under sedation.",
-    staffNote: "Package includes: surgeon fee, OT / procedure room, anaesthetist fee, sedation drugs, scrub nurse, consumables, day care, post-op review. Excludes: histopathology / biopsy, overnight room stay, post-op medicines / antibiotics, additional operative intervention — all billed separately.",
+    staffNote: "Package includes: surgeon fee, OT / procedure room, anaesthetist fee, sedation drugs, scrub nurse, consumables, day care, post-op review.",
+    billingNote: "Surgeon fee, OT, sedation / GA, anaesthetist, hysteroscope consumables, day-care recovery and nursing included.",
+    inclusionsList: [
+      "Surgeon fee",
+      "OT charges / theatre fee",
+      "Sedation / GA",
+      "Anaesthetist fee",
+      "Hysteroscope & consumables",
+      "Day care / recovery room",
+      "Nursing charges"
+    ],
+    exclusionsList: [
+      "Endometrial biopsy / polypectomy (if operative)",
+      "Histopathology"
+    ],
     lineItems: PKG_DIAG_HYST_ITEMS,
     duplicateBlockList: ["Surgeon", "OT", "Anaesthetist", "Scrub nurse", "Consumables", "Day care", "Post-op"],
   },
 
   {
     id: "PKG-OP-HYST",
-    name: "Operative Hysteroscopy",
+    name: "Operative hysteroscopy",
     category: "Surgical / Procedure Packages",
     fullPaymentAmount: 50000,
     description: "Operative hysteroscopy under sedation / GA.",
-    staffNote: "Package includes: surgeon fee, OT, anaesthetist fee, sedation drugs, scrub nurse, consumables + scope, day care, post-op review. Excludes: histopathology / biopsy, overnight room stay, post-op medicines / antibiotics, additional operative intervention — all billed separately.",
+    staffNote: "Package includes: surgeon fee, OT, anaesthetist fee, sedation drugs, scrub nurse, consumables + scope, day care, post-op review.",
+    billingNote: "Polypectomy / myomectomy / septum resection. Operative hysteroscope and consumables included. Post-op medications not included.",
+    inclusionsList: [
+      "Surgeon fee",
+      "OT charges / theatre fee",
+      "General anaesthesia",
+      "Anaesthetist fee",
+      "Operative hysteroscope & consumables",
+      "Day care / recovery room",
+      "Nursing charges"
+    ],
+    exclusionsList: [
+      "Histopathology of specimen",
+      "Overnight IP stay",
+      "Post-op medications"
+    ],
     lineItems: PKG_OP_HYST_ITEMS,
     duplicateBlockList: ["Surgeon", "OT", "Anaesthetist", "Scrub nurse", "Consumables", "Day care", "Post-op"],
   },
@@ -530,62 +811,144 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     category: "Surgical / Procedure Packages",
     fullPaymentAmount: 25000,
     description: "Dilatation and curettage procedure.",
-    staffNote: "Package includes: surgeon fee, OT / procedure room, anaesthetist fee, consumables. Excludes: histopathology / biopsy, overnight room stay, post-op medicines / antibiotics, additional operative intervention — all billed separately.",
+    staffNote: "Package includes: surgeon fee, OT / procedure room, anaesthetist fee, consumables.",
+    billingNote: "OT, sedation / GA, anaesthetist, consumables and day-care recovery included.",
+    inclusionsList: [
+      "Surgeon fee",
+      "OT charges",
+      "Sedation / GA",
+      "Anaesthetist fee",
+      "Consumables",
+      "Day care / recovery"
+    ],
+    exclusionsList: [
+      "Histopathology",
+      "Overnight stay"
+    ],
     lineItems: PKG_DNC_ITEMS,
     duplicateBlockList: ["Surgeon", "OT", "Anaesthetist", "Consumables"],
   },
 
   {
     id: "PKG-CERCLAGE",
-    name: "Cervical Cerclage",
+    name: "Cervical cerclage",
     category: "Surgical / Procedure Packages",
     fullPaymentAmount: 40000,
     description: "Cervical cerclage procedure under anaesthesia.",
-    staffNote: "Package includes: surgeon fee, OT, anaesthetist fee, consumables + suture. Excludes: histopathology / biopsy, overnight room stay, post-op medicines / antibiotics, additional operative intervention — all billed separately.",
+    staffNote: "Package includes: surgeon fee, OT, anaesthetist fee, consumables + suture.",
+    billingNote: "McDonald / Shirodkar. OT, spinal / GA, anaesthetist, suture material, day-care recovery and nursing included.",
+    inclusionsList: [
+      "Surgeon fee",
+      "OT charges",
+      "Spinal / GA",
+      "Anaesthetist fee",
+      "Suture material & consumables",
+      "Day care / recovery",
+      "Nursing charges"
+    ],
+    exclusionsList: [
+      "Post-op medications",
+      "Overnight stay"
+    ],
     lineItems: PKG_CERCLAGE_ITEMS,
     duplicateBlockList: ["Surgeon", "OT", "Anaesthetist", "Consumables"],
   },
 
   {
     id: "PKG-PESA",
-    name: "PESA / TESA – Dr. AP",
+    name: "PESA / TESA — Dr. AP",
     category: "Surgical / Procedure Packages",
     fullPaymentAmount: 40000,
     description: "Percutaneous epididymal / testicular sperm aspiration by Dr. AP.",
-    staffNote: "Performed by Dr. AP only. Package includes: surgeon fee, OT / procedure room, anaesthetist fee + sedation. Excludes: histopathology / biopsy, overnight room stay, post-op medicines / antibiotics, additional operative intervention — all billed separately.",
+    staffNote: "Performed by Dr. AP only. Package includes: surgeon fee, OT / procedure room, anaesthetist fee + sedation.",
+    billingNote: "Procedure charges for surgical sperm retrieval.",
+    inclusionsList: [
+      "Surgical sperm retrieval procedure",
+      "OT charges",
+      "Anaesthesia",
+      "Anaesthetist fee",
+      "Consumables",
+      "Embryologist handling fee"
+    ],
+    exclusionsList: [
+      "Semen analysis / freezing workup"
+    ],
     lineItems: PKG_PESA_ITEMS,
     duplicateBlockList: ["Dr. AP", "OT", "Anaesthetist"],
   },
 
   {
     id: "PKG-CYST-ASP",
-    name: "Ultrasound-Guided Cyst Aspiration",
+    name: "Ultrasound-guided cyst aspiration",
     category: "Surgical / Procedure Packages",
     fullPaymentAmount: 15000,
     description: "Ultrasound-guided aspiration of ovarian / pelvic cyst.",
-    staffNote: "Package includes: gynaecologist fee, OT / procedure room, ultrasound guidance. Excludes: histopathology / biopsy, overnight room stay, post-op medicines / antibiotics, additional operative intervention — all billed separately.",
+    staffNote: "Package includes: gynaecologist fee, OT / procedure room, ultrasound guidance.",
+    billingNote: "Procedure charges, OT, sedation, anaesthetist, consumables, ultrasound guidance and nursing included.",
+    inclusionsList: [
+      "Procedure charges",
+      "OT charges",
+      "Sedation",
+      "Anaesthetist fee",
+      "Consumables",
+      "Ultrasound guidance",
+      "Nursing charges"
+    ],
+    exclusionsList: [
+      "Histopathology / cyst fluid analysis",
+      "Medications post-procedure"
+    ],
     lineItems: PKG_CYST_ASP_ITEMS,
     duplicateBlockList: ["Surgeon", "OT", "Ultrasound"],
   },
 
   {
     id: "PKG-IUI-ANA",
-    name: "IUI under Anaesthesia",
+    name: "IUI under anaesthesia",
     category: "Surgical / Procedure Packages",
     fullPaymentAmount: 15000,
     description: "Intrauterine insemination performed under sedation / anaesthesia.",
-    staffNote: "Package includes: IUI procedure fee, anaesthetist fee + sedation, OT / procedure room. Excludes: semen preparation, medication, sperm workup — billed separately.",
+    staffNote: "Package includes: IUI procedure fee, anaesthetist fee + sedation, OT / procedure room.",
+    billingNote: "IUI procedure fee, sperm wash, sedation, anaesthetist, consumables and procedure room charges included.",
+    inclusionsList: [
+      "IUI procedure fee",
+      "Sperm wash & preparation",
+      "Anaesthesia / sedation",
+      "Anaesthetist fee",
+      "Consumables / catheter",
+      "OT / procedure room charges"
+    ],
+    exclusionsList: [
+      "Semen analysis pre-wash",
+      "Follicular monitoring scans",
+      "Medications"
+    ],
     lineItems: PKG_IUI_ANA_ITEMS,
     duplicateBlockList: ["IUI", "Anaesthetist", "OT"],
   },
 
   {
     id: "PKG-BARTHOLIN",
-    name: "Bartholin Cystectomy / Marsupialisation",
+    name: "Bartholin cystectomy / marsupialisation",
     category: "Surgical / Procedure Packages",
     fullPaymentAmount: 20000,
     description: "Bartholin cystectomy or marsupialisation under anaesthesia.",
-    staffNote: "Package includes: surgeon fee, OT, anaesthetist fee + sedation. Excludes: histopathology / biopsy, overnight room stay, post-op medicines / antibiotics, additional operative intervention — all billed separately.",
+    staffNote: "Package includes: surgeon fee, OT, anaesthetist fee + sedation.",
+    billingNote: "Surgeon fee, OT, spinal / GA, anaesthetist, consumables, sutures, day-care recovery and nursing included.",
+    inclusionsList: [
+      "Surgeon fee",
+      "OT charges",
+      "Spinal / GA",
+      "Anaesthetist fee",
+      "Consumables & sutures",
+      "Day care / recovery",
+      "Nursing charges"
+    ],
+    exclusionsList: [
+      "Histopathology",
+      "Overnight IP stay",
+      "Post-op antibiotics"
+    ],
     lineItems: PKG_BARTHOLIN_ITEMS,
     duplicateBlockList: ["Surgeon", "OT", "Anaesthetist"],
   },
@@ -594,35 +957,176 @@ export const PACKAGE_MASTER: PackageMaster[] = [
 
   {
     id: "PKG-EGG-FRZ",
-    name: "Egg Freezing / Oocyte Vitrification",
+    name: "Oocyte vitrification / egg freezing package",
     category: "Cryostorage / Oocyte / Sperm Cryopreservation",
     fullPaymentAmount: 90000,
     description: "Oocyte vitrification — complete cycle including OPU + freezing + 1-year storage.",
-    staffNote: "Package includes: pre-cycle consultation, ovarian reserve assessment, monitoring scans, monitoring consultations, OPU procedure, OT, anaesthetist, sedation drugs, embryologist fee, oocyte vitrification, one-year storage. Excludes: stimulation medicines, pre-cycle hormones, serology, blood tests.",
+    staffNote: "Package includes: pre-cycle consultation, ovarian reserve assessment, monitoring scans, OPU, anaesthesia, vitrification, one-year storage.",
+    billingNote: "Stimulation monitoring, OPU, vitrification and 1-year storage included. Stimulation medicines and pre-cycle investigations separate.",
+    inclusionsList: [
+      "Stimulation monitoring consultations + follicular scans",
+      "OPU (ovum pick-up) procedure",
+      "OT charges + anaesthesia + anaesthetist fee",
+      "Embryologist fee",
+      "Oocyte vitrification",
+      "1-year cryostorage"
+    ],
+    exclusionsList: [
+      "Stimulation medications",
+      "Pre-cycle investigations"
+    ],
     lineItems: PKG_EGG_FRZ_ITEMS,
     duplicateBlockList: ["Pre-cycle", "Ovarian", "Monitoring", "OPU", "OT", "Anaesthetist", "Sedation", "Embryologist", "vitrification", "storage"],
+  },
+
+  {
+    id: "PKG-CRYO-ADD",
+    name: "Additional cryolock",
+    category: "Cryostorage / Oocyte / Sperm Cryopreservation",
+    fullPaymentAmount: 5000,
+    description: "Additional cryolock for vitrification storage.",
+    staffNote: "Charged per additional lock required.",
+    billingNote: "Additional cryolock for vitrification storage.",
+    inclusionsList: [
+      "Additional cryolock structure & liquid nitrogen vitrification"
+    ],
+    exclusionsList: [
+      "Annual storage renewal fees"
+    ],
+    lineItems: [
+      { id: "PKG-CRYO-ADD-0", name: "Additional cryolock vitrification storage", price: 5000, category: "Storage", isOptional: false }
+    ],
+    duplicateBlockList: []
+  },
+
+  {
+    id: "PKG-SPERM-3M",
+    name: "Sperm cryopreservation — first vial / 3 months",
+    category: "Cryostorage / Oocyte / Sperm Cryopreservation",
+    fullPaymentAmount: 5000,
+    description: "Sperm cryopreservation processing & storage for 3 months.",
+    staffNote: "Covers sperm wash, processing, freezing, and initial 3 months storage.",
+    billingNote: "Sperm cryopreservation first vial and 3 months storage.",
+    inclusionsList: [
+      "Sperm collection, processing & wash",
+      "Vial vitrification & liquid nitrogen preparation",
+      "3-month cryostorage facility"
+    ],
+    exclusionsList: [
+      "Semen analysis diagnostics",
+      "Storage extension beyond 3 months"
+    ],
+    lineItems: [
+      { id: "PKG-SPERM-3M-0", name: "Sperm wash & cryopreservation 3M", price: 5000, category: "Storage", isOptional: false }
+    ],
+    duplicateBlockList: []
+  },
+
+  {
+    id: "PKG-SPERM-6M",
+    name: "Sperm cryopreservation — 6 months",
+    category: "Cryostorage / Oocyte / Sperm Cryopreservation",
+    fullPaymentAmount: 10000,
+    description: "Sperm cryopreservation processing & storage for 6 months.",
+    staffNote: "Covers processing and storage for 6 months.",
+    billingNote: "Sperm cryopreservation and 6 months storage.",
+    inclusionsList: [
+      "Sperm processing & cryopreservation",
+      "6-month cryostorage facility"
+    ],
+    exclusionsList: [
+      "Storage extension beyond 6 months"
+    ],
+    lineItems: [
+      { id: "PKG-SPERM-6M-0", name: "Sperm wash & cryopreservation 6M", price: 10000, category: "Storage", isOptional: false }
+    ],
+    duplicateBlockList: []
+  },
+
+  {
+    id: "PKG-SPERM-1Y",
+    name: "Long-term sperm cryopreservation (1 year)",
+    category: "Cryostorage / Oocyte / Sperm Cryopreservation",
+    fullPaymentAmount: 20000,
+    description: "Sperm cryopreservation processing & storage for 1 year.",
+    staffNote: "Covers processing and storage for 1 year.",
+    billingNote: "Long-term sperm cryopreservation (1 year).",
+    inclusionsList: [
+      "Sperm processing & cryopreservation",
+      "1-year cryostorage facility"
+    ],
+    exclusionsList: [
+      "Storage extension beyond 1 year"
+    ],
+    lineItems: [
+      { id: "PKG-SPERM-1Y-0", name: "Sperm wash & cryopreservation 1Y", price: 20000, category: "Storage", isOptional: false }
+    ],
+    duplicateBlockList: []
   },
 
   // ── Embryo Pooling ─────────────────────────────────────────────────────────
 
   {
     id: "PKG-2CYCLE",
-    name: "2-Cycle ICSI / Embryo Pooling",
+    name: "2-cycle ICSI / embryo pooling",
     category: "Embryo Pooling / Oocyte Accumulation",
     fullPaymentAmount: 210000,
     description: "Two consecutive ICSI cycles for embryo pooling.",
-    staffNote: "2 complete OPU + ICSI cycles, blastocyst culture, 1-year storage, 1 FET included. Excludes: stimulation medicines for both cycles, pre-cycle hormones, serology, blood tests. Additional FETs beyond the included 1 billed separately.",
+    staffNote: "2 complete OPU + ICSI cycles, blastocyst culture, 1-year storage, 1 FET included.",
+    billingNote: "2 complete OPU + ICSI cycles, blastocyst culture, 1-year storage and 1 FET included.",
+    inclusionsList: [
+      "2 × OPU procedures",
+      "2 × OT charges & theatre fees",
+      "2 × Anaesthetist fees + sedation",
+      "2 × Embryologist fees",
+      "2 × Sperm preparation (ICSI)",
+      "2 × ICSI procedures",
+      "2 × Blastocyst culture (Day 5)",
+      "Vitrification + 1-year cryostorage",
+      "1 × FET — without anaesthesia (₹35,000 value)",
+      "Consumables (both cycles) + pap smear",
+      "Monitoring consultations + follicular scans (both cycles)"
+    ],
+    exclusionsList: [
+      "MF or PICSI per cycle ₹10,000",
+      "PGT-A per embryo ₹25,000",
+      "Additional cryolock ₹5,000",
+      "Stimulation medications",
+      "Investigations"
+    ],
     lineItems: PKG_2CYCLE_ITEMS,
     duplicateBlockList: ["Cycle 1", "Cycle 2", "cryostorage", "FET"],
   },
 
   {
     id: "PKG-3CYCLE",
-    name: "3-Cycle ICSI / Embryo Pooling",
+    name: "3-cycle ICSI / embryo pooling",
     category: "Embryo Pooling / Oocyte Accumulation",
     fullPaymentAmount: 300000,
     description: "Three consecutive ICSI cycles for embryo pooling.",
-    staffNote: "3 complete OPU + ICSI cycles, blastocyst culture, 1-year storage, 2 FETs included. Excludes: stimulation medicines for all cycles, pre-cycle hormones, serology, blood tests. Additional FETs beyond the included 2 billed separately.",
+    staffNote: "3 complete OPU + ICSI cycles, blastocyst culture, 1-year storage, 2 FETs included.",
+    billingNote: "3 complete OPU + ICSI cycles, blastocyst culture, 1-year storage and 2 FETs included.",
+    inclusionsList: [
+      "3 × OPU procedures",
+      "3 × OT charges & theatre fees",
+      "3 × Anaesthetist fees + sedation",
+      "3 × Embryologist fees",
+      "3 × Sperm preparation (ICSI)",
+      "3 × ICSI procedures",
+      "3 × Blastocyst culture (Day 5)",
+      "Vitrification + 1-year cryostorage",
+      "2 × FET — without anaesthesia (₹35,000 each)",
+      "Consumables (all cycles) + pap smear",
+      "Monitoring consultations + follicular scans (all cycles)"
+    ],
+    exclusionsList: [
+      "MF or PICSI per cycle ₹10,000",
+      "PGT-A per embryo ₹25,000",
+      "Additional cryolock ₹5,000",
+      "Additional FET beyond 2 ₹40,000",
+      "Stimulation medications",
+      "Investigations"
+    ],
     lineItems: PKG_3CYCLE_ITEMS,
     duplicateBlockList: ["Cycle 1", "Cycle 2", "Cycle 3", "cryostorage", "FET"],
   },
@@ -636,9 +1140,24 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     fullPaymentAmount: 90000,
     description: "Use only if clinician approved. Reduced package cost.",
     staffNote: "⚠ Use ONLY after written clinician approval. Reduced package rate. All standard ICSI inclusions apply. Monitoring consultations and follicular scans are complimentary.",
+    billingNote: "Charity package: ICSI cycle, scans, OPU, ICSI procedure and embryo transfer.",
+    inclusionsList: [
+      "OPU (ovum pick-up) procedure",
+      "OT charges",
+      "Anaesthetist fee & sedation",
+      "Embryologist fee",
+      "Sperm wash & ICSI procedure",
+      "Embryo transfer",
+      "Complimentary scans & consultations"
+    ],
+    exclusionsList: [
+      "Stimulation medications",
+      "Investigations",
+      "Cryostorage renewal"
+    ],
     lineItems: PKG_CHARITY_ITEMS,
     duplicateBlockList: ["Reduced", "monitoring", "follicular"],
-  },
+  }
 ]
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -646,15 +1165,16 @@ export const PACKAGE_MASTER: PackageMaster[] = [
 // ═════════════════════════════════════════════════════════════════════════════
 
 export const ADDON_MASTER: AddOnItem[] = [
-  { id: "ADD-MF",            name: "MF / Microfluidic sperm selection",                      price: 10000, category: "Lab",        status: "Active" },
+  { id: "ADD-MF",            name: "MF — microfluidic sperm selection",                      price: 10000, category: "Lab",        status: "Active" },
   { id: "ADD-PICSI",         name: "PICSI",                                                   price: 10000, category: "Lab",        status: "Active" },
-  { id: "ADD-CALCIUM",       name: "Calcium Ionophore",                                       price: 10000, category: "Lab",        status: "Active" },
-  { id: "ADD-PGTA",          name: "PGT-A (per additional embryo beyond package inclusion)",  price: 25000, category: "Genetics",   status: "Active" },
+  { id: "ADD-CALCIUM",       name: "Calcium ionophore",                                       price: 10000, category: "Lab",        status: "Active" },
+  { id: "ADD-PGTA",          name: "PGT-A (per embryo)",                                      price: 25000, category: "Genetics",   status: "Active" },
   { id: "ADD-LAH",           name: "Laser-assisted hatching (LAH)",                          price: 15000, category: "Lab",        status: "Active" },
-  { id: "ADD-SCRATCH",       name: "Endometrial Scratch",                                     price: 3000,  category: "Procedure",  status: "Active" },
+  { id: "ADD-SCRATCH",       name: "Endometrial scratch",                                     price: 3000,  category: "Procedure",  status: "Active" },
   { id: "ADD-STYLET",        name: "Stylet used",                                             price: 5000,  category: "Consumables", status: "Active" },
-  { id: "ADD-FET",           name: "Additional FET (beyond included FET)",                   price: 40000, category: "Procedure",  status: "Active" },
-  { id: "ADD-CRYO",          name: "Additional Cryolock",                                     price: 5000,  category: "Consumables", status: "Active" },
+  { id: "ADD-FET",           name: "Additional FET (with anaesthesia)",                       price: 40000, category: "Procedure",  status: "Active" },
+  { id: "ADD-CRYO",          name: "Additional cryolock",                                     price: 5000,  category: "Consumables", status: "Active" },
+  { id: "ADD-ROOM",          name: "Single room (per day)",                                   price: 5000,  category: "Room",        status: "Active" },
 
   // Cryostorage separate items (also billable as add-ons)
   { id: "ADD-CRYO-RENEW",    name: "Annual cryolock renewal (per cryolock)",                 price: 5000,  category: "Storage",    status: "Active" },

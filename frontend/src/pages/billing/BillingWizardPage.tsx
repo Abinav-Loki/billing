@@ -1,24 +1,19 @@
 import * as React from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Badge } from "../../components/ui/badge"
 import { Progress } from "../../components/ui/progress"
 import { formatCurrency, formatDate } from "../../lib/utils"
-import { mockPatients, mockBills, Patient, Bill } from "../../lib/mockData"
-import { generateBillPDF } from "../../lib/pdfExport"
+import { mockBills, Bill } from "../../lib/mockData"
 import {
   PACKAGE_MASTER,
   ADDON_MASTER,
-  PACKAGE_CATEGORIES,
   PackageMaster,
-  BillLineItem,
   AddOnItem,
-  BillingMethod,
-  checkBillingRules,
   getPackagesByCategory,
-  PackageCategory,
+  PACKAGE_CATEGORIES,
 } from "../../lib/billingMaster"
 import {
   ArrowLeft,
@@ -30,1073 +25,1179 @@ import {
   Printer,
   CheckCircle,
   Info,
-  AlertTriangle,
   ChevronDown,
   ChevronUp,
   FileText,
   Sparkles,
-  ToggleLeft,
-  ToggleRight,
   Search,
-  X,
-  BadgePercent,
-  Stethoscope,
+  Check,
+  Building2,
+  Calendar,
+  Layers
 } from "lucide-react"
 
-// ── Helpers ──────────────────────────────────────────────────────────────
-const STEPS = [
-  { id: 1, label: "Patient" },
-  { id: 2, label: "Category" },
-  { id: 3, label: "Package" },
-  { id: 4, label: "Billing Method" },
-  { id: 5, label: "Add-ons" },
-  { id: 6, label: "Preview" },
-  { id: 7, label: "Done" },
-]
-
-interface LineItemConfig {
-  item: BillLineItem
-  qty: number
-  selected: boolean
-}
-
-interface AddOnConfig {
-  addon: AddOnItem
-  qty: number
-}
-
-// ── Main Component ────────────────────────────────────────────────────────
 export function BillingWizardPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const patientParamId = searchParams.get("patientId")
 
+  // Wizard Steps:
+  // 1: Patient Details Form
+  // 2: Package & Add-ons Selection
+  // 3: Billing Format Choice
+  // 4: Invoice Preview & Print
+  // 5: Success Done
   const [step, setStep] = React.useState(1)
 
-  // Selections
-  const [selectedPatient, setSelectedPatient] = React.useState<Patient | null>(null)
-  const [selectedCategory, setSelectedCategory] = React.useState<PackageCategory | null>(null)
+  // Step 1: Patient details state
+  const [patientName, setPatientName] = React.useState("")
+  const [patientId, setPatientId] = React.useState("")
+  const [age, setAge] = React.useState("")
+  const [doctorOption, setDoctorOption] = React.useState("Dr. AP")
+  const [customDoctorName, setCustomDoctorName] = React.useState("")
+  const [billDate, setBillDate] = React.useState(() => new Date().toISOString().split("T")[0])
+  const [billNo, setBillNo] = React.useState("")
+
+  // Step 2: Selections state
   const [selectedPackage, setSelectedPackage] = React.useState<PackageMaster | null>(null)
-  const [billingMethod, setBillingMethod] = React.useState<BillingMethod>("full_payment")
-  const [lineItems, setLineItems] = React.useState<LineItemConfig[]>([])
-  const [selectedAddOns, setSelectedAddOns] = React.useState<AddOnConfig[]>([])
+  const [selectedAddOns, setSelectedAddOns] = React.useState<{ addon: AddOnItem; qty: number }[]>([])
+  const [exclusions, setExclusions] = React.useState<string[]>([])
+  const [newExclusionText, setNewExclusionText] = React.useState("")
+  
+  // Package search & category filtering state
+  const [activeCategory, setActiveCategory] = React.useState<string>("IVF / ICSI / FET")
+  const [packageSearch, setPackageSearch] = React.useState("")
+  
+  // Addon accordion & search state
+  const [addonSearch, setAddonSearch] = React.useState("")
+  const [isAddonSectionOpen, setIsAddonSectionOpen] = React.useState(true)
 
-  // Extras
-  const [discount, setDiscount] = React.useState(0)
+  // Discount state
+  const [discount, setDiscount] = React.useState<number>(0)
   const [discountNote, setDiscountNote] = React.useState("")
-  const [billingNotes, setBillingNotes] = React.useState("")
-  const [generatedBillNo, setGeneratedBillNo] = React.useState("")
 
-  // UI state
-  const [patientSearch, setPatientSearch] = React.useState("")
-  const [pkgSearch, setPkgSearch] = React.useState("")
-  const [addOnSearch, setAddOnSearch] = React.useState("")
-  const [expandedAddOnCategories, setExpandedAddOnCategories] = React.useState<string[]>(["Lab"])
+  // Step 3: Billing format choice state
+  const [billingFormat, setBillingFormat] = React.useState<"inline" | "detailed">("inline")
 
-  // Pre-fill from URL
+  // Initialize exclusions when selected package changes
   React.useEffect(() => {
-    if (patientParamId) {
-      const pat = mockPatients.find((p) => p.id === patientParamId)
-      if (pat) setSelectedPatient(pat)
+    if (selectedPackage) {
+      setExclusions(selectedPackage.exclusionsList || [])
+    } else {
+      setExclusions([])
     }
-  }, [patientParamId])
+  }, [selectedPackage])
 
-  // Populate line items when package + method changes
+  const handleAddExclusion = () => {
+    if (!newExclusionText.trim()) return
+    setExclusions(prev => [...prev, newExclusionText.trim()])
+    setNewExclusionText("")
+  }
+
+  const handleRemoveExclusion = (index: number) => {
+    setExclusions(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Generate unique auto-incremented Bill No based on mockBills length on load
   React.useEffect(() => {
-    if (!selectedPackage) return
-    setLineItems(
-      selectedPackage.lineItems.map((item) => ({
-        item,
-        qty: item.defaultQty ?? 1,
-        selected: !item.isOptional,
-      }))
-    )
-  }, [selectedPackage, billingMethod])
+    const prefix = "ASCAS-2025-"
+    const matchingBills = mockBills.filter(b => b.billNo.startsWith(prefix))
+    let nextSeq = 1
+    if (matchingBills.length > 0) {
+      const sequences = matchingBills.map(b => {
+        const parts = b.billNo.split("-")
+        const num = parseInt(parts[parts.length - 1], 10)
+        return isNaN(num) ? 0 : num
+      })
+      nextSeq = Math.max(...sequences, 0) + 1
+    } else {
+      nextSeq = mockBills.length + 1
+    }
+    setBillNo(`${prefix}${String(nextSeq).padStart(4, "0")}`)
+  }, [])
 
-  // ── Calculations ─────────────────────────────────────────────────────
-  const packageAmount = React.useMemo(() => {
-    if (!selectedPackage) return 0
-    if (billingMethod === "full_payment") return selectedPackage.fullPaymentAmount
-    return lineItems.filter((l) => l.selected).reduce((sum, l) => sum + l.item.price * l.qty, 0)
-  }, [selectedPackage, billingMethod, lineItems])
+  // Doctor name getter
+  const getDoctorName = () => {
+    return doctorOption === "Dr. AP" ? "Dr. AP" : (customDoctorName || "Dr. Other")
+  }
 
-  const addOnTotal = React.useMemo(
-    () => selectedAddOns.reduce((s, a) => s + a.addon.price * a.qty, 0),
-    [selectedAddOns]
-  )
-
-  const subtotal = packageAmount + addOnTotal
+  // Calculations
+  const packageAmount = selectedPackage ? selectedPackage.fullPaymentAmount : 0
+  const addOnsTotal = selectedAddOns.reduce((sum, item) => sum + item.addon.price * item.qty, 0)
+  const subtotal = packageAmount + addOnsTotal
   const grandTotal = Math.max(0, subtotal - discount)
 
-  // Rule violations for add-ons when full payment selected
-  const ruleViolations = React.useMemo(() => {
-    if (!selectedPackage || billingMethod !== "full_payment") return []
-    return checkBillingRules(
-      selectedPackage.id,
-      billingMethod,
-      selectedAddOns.map((a) => a.addon.name)
-    )
-  }, [selectedPackage, billingMethod, selectedAddOns])
-
-  // ── Line item handlers ────────────────────────────────────────────────
-  const toggleLineItem = (id: string) => {
-    setLineItems((prev) => prev.map((l) => (l.item.id === id ? { ...l, selected: !l.selected } : l)))
+  // Navigation handlers
+  const handleNextStep1 = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!patientName || !patientId || !age || (doctorOption === "other" && !customDoctorName)) {
+      alert("Please fill in all patient details correctly.")
+      return
+    }
+    setStep(2)
   }
 
-  const updateLineQty = (id: string, qty: number) => {
-    setLineItems((prev) => prev.map((l) => (l.item.id === id ? { ...l, qty: Math.max(1, qty) } : l)))
+  const handleNextStep2 = () => {
+    if (!selectedPackage) {
+      alert("Please select a primary package.")
+      return
+    }
+    setStep(3)
   }
 
-  // ── Add-on handlers ──────────────────────────────────────────────────
-  const handleAddAddon = (addon: AddOnItem) => {
-    setSelectedAddOns((prev) => {
-      const exists = prev.find((a) => a.addon.id === addon.id)
-      if (exists) return prev.map((a) => (a.addon.id === addon.id ? { ...a, qty: a.qty + 1 } : a))
-      return [...prev, { addon, qty: 1 }]
+  const handleSelectFormat = (format: "inline" | "detailed") => {
+    setBillingFormat(format)
+    setStep(4)
+  }
+
+  // Add / remove add-ons
+  const handleToggleAddOn = (addon: AddOnItem) => {
+    setSelectedAddOns(prev => {
+      const exists = prev.find(item => item.addon.id === addon.id)
+      if (exists) {
+        return prev.filter(item => item.addon.id !== addon.id)
+      } else {
+        return [...prev, { addon, qty: 1 }]
+      }
     })
   }
 
-  const handleRemoveAddon = (id: string) => setSelectedAddOns((prev) => prev.filter((a) => a.addon.id !== id))
-
-  const updateAddonQty = (id: string, qty: number) => {
-    setSelectedAddOns((prev) => prev.map((a) => (a.addon.id === id ? { ...a, qty: Math.max(1, qty) } : a)))
+  const handleUpdateAddOnQty = (addonId: string, value: number) => {
+    setSelectedAddOns(prev =>
+      prev.map(item =>
+        item.addon.id === addonId ? { ...item, qty: Math.max(1, value) } : item
+      )
+    )
   }
 
-  // ── Navigation ───────────────────────────────────────────────────────
-  const next = () => setStep((s) => Math.min(s + 1, 7))
-  const back = () => setStep((s) => Math.max(s - 1, 1))
-
-  const resetAndNew = () => {
-    setStep(1)
-    setSelectedPatient(null)
-    setSelectedCategory(null)
-    setSelectedPackage(null)
-    setBillingMethod("full_payment")
-    setLineItems([])
-    setSelectedAddOns([])
-    setDiscount(0)
-    setDiscountNote("")
-    setBillingNotes("")
-    setGeneratedBillNo("")
+  const isAddOnSelected = (addonId: string) => {
+    return selectedAddOns.some(item => item.addon.id === addonId)
   }
 
-  // ── Generate bill ────────────────────────────────────────────────────
-  const handleGenerateBill = () => {
-    if (!selectedPatient || !selectedPackage) return
-    const billNo = `BILL-2026-${String(mockBills.length + 1).padStart(4, "0")}`
-    setGeneratedBillNo(billNo)
+  const getAddOnQty = (addonId: string) => {
+    const item = selectedAddOns.find(item => item.addon.id === addonId)
+    return item ? item.qty : 1
+  }
+
+  // Confirm and Generate Bill in DB
+  const handleConfirmAndGenerate = () => {
+    if (!selectedPackage) return
 
     const newBill: Bill = {
       billNo,
-      uhid: selectedPatient.uhid,
-      patientName: selectedPatient.name,
+      uhid: patientId,
+      patientName,
       packageName: selectedPackage.name,
       packagePrice: packageAmount,
-      addOns: selectedAddOns.map((a) => ({ name: a.addon.name, price: a.addon.price * a.qty })),
+      addOns: selectedAddOns.map(item => ({
+        name: item.qty > 1 ? `${item.addon.name} (x${item.qty})` : item.addon.name,
+        price: item.addon.price * item.qty
+      })),
       roomCharges: 0,
       additionalCharges: 0,
       discount,
       taxAmount: 0,
       grandTotal,
-      date: new Date().toISOString().split("T")[0],
+      date: billDate,
       status: "Pending",
-      billingNotes,
-      doctorName: selectedPatient.doctorName,
+      doctorName: getDoctorName(),
+      billingNotes: discountNote ? `Discount note: ${discountNote}` : undefined,
+      billingMethod: "full_payment",
+      exclusions: exclusions
     }
 
     mockBills.unshift(newBill)
-    selectedPatient.billingHistory = selectedPatient.billingHistory ?? []
-    selectedPatient.billingHistory.unshift({
-      billNo,
-      date: newBill.date,
-      amount: newBill.grandTotal,
-      status: "Pending",
-    })
-
-    next()
+    setStep(5)
   }
 
-  // ── Addon categories ─────────────────────────────────────────────────
-  const addonCategories = [...new Set(ADDON_MASTER.map((a) => a.category))]
-  const toggleAddonCategory = (cat: string) => {
-    setExpandedAddOnCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-    )
+  const resetWizard = () => {
+    setPatientName("")
+    setPatientId("")
+    setAge("")
+    setDoctorOption("Dr. AP")
+    setCustomDoctorName("")
+    setBillDate(new Date().toISOString().split("T")[0])
+    setSelectedPackage(null)
+    setSelectedAddOns([])
+    setDiscount(0)
+    setDiscountNote("")
+    setExclusions([])
+    setNewExclusionText("")
+    
+    // Increment bill sequence for the next one
+    const prefix = "ASCAS-2025-"
+    const matchingBills = mockBills.filter(b => b.billNo.startsWith(prefix))
+    let nextSeq = 1
+    if (matchingBills.length > 0) {
+      const sequences = matchingBills.map(b => {
+        const parts = b.billNo.split("-")
+        const num = parseInt(parts[parts.length - 1], 10)
+        return isNaN(num) ? 0 : num
+      })
+      nextSeq = Math.max(...sequences, 0) + 1
+    } else {
+      nextSeq = mockBills.length + 1
+    }
+    setBillNo(`${prefix}${String(nextSeq).padStart(4, "0")}`)
+
+    setStep(1)
   }
 
-  const filteredAddons = ADDON_MASTER.filter(
-    (a) =>
-      a.status === "Active" &&
-      (addOnSearch === "" || a.name.toLowerCase().includes(addOnSearch.toLowerCase()))
+  // Filter packages based on active category & search
+  const filteredPackages = getPackagesByCategory(activeCategory as any).filter(
+    pkg =>
+      pkg.name.toLowerCase().includes(packageSearch.toLowerCase()) ||
+      pkg.description.toLowerCase().includes(packageSearch.toLowerCase())
   )
 
-  // ── Category icon helper ─────────────────────────────────────────────
-  const categoryColors: Record<string, string> = {
-    "IVF / ICSI / FET": "bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300",
-    "Donor Programmes": "bg-pink-100 text-pink-700 dark:bg-pink-950/40 dark:text-pink-300",
-    "Surgical / Procedure Packages": "bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300",
-    "Cryostorage / Oocyte / Sperm Cryopreservation": "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-300",
-    "Embryo Pooling / Oocyte Accumulation": "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
-    "Add-ons / Separate Billing Items": "bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300",
-  }
+  // Filter addons based on search
+  const filteredAddOns = ADDON_MASTER.filter(
+    addon =>
+      addon.status === "Active" &&
+      addon.name.toLowerCase().includes(addonSearch.toLowerCase())
+  )
 
-  const lineItemCategoryColors: Record<string, string> = {
-    Professional: "bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-300",
-    Diagnostics: "bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-300",
-    OT: "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300",
-    Anaesthesia: "bg-orange-50 text-orange-700 dark:bg-orange-950/30 dark:text-orange-300",
-    Pharmacy: "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300",
-    Lab: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300",
-    Procedure: "bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300",
-    Consumables: "bg-slate-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300",
-    Room: "bg-teal-50 text-teal-700 dark:bg-teal-950/30 dark:text-teal-300",
-    Nursing: "bg-pink-50 text-pink-700 dark:bg-pink-950/30 dark:text-pink-300",
-    Storage: "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300",
-    Genetics: "bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300",
-    Donor: "bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-300",
-    Admin: "bg-zinc-50 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300",
-  }
-
-  const handleDownloadPDF = () => {
-    const bill = mockBills.find((b) => b.billNo === generatedBillNo)
-    if (bill && selectedPatient) {
-      generateBillPDF(bill)
-    }
+  // Check if an add-on is a per-unit add-on
+  const isPerUnitAddon = (addonName: string) => {
+    const name = addonName.toLowerCase()
+    return name.includes("pgt-a") || name.includes("room") || name.includes("cryolock")
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+    <div className="space-y-6 max-w-6xl mx-auto print:max-w-full print:mx-0">
+      
+      {/* ── Print styling tag ── */}
+      <style>{`
+        @media print {
+          body {
+            background: white !important;
+            color: black !important;
+          }
+          aside, header, nav, button, .print-hide, .no-print {
+            display: none !important;
+          }
+          main {
+            margin: 0 !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+          }
+          .pl-64 {
+            padding-left: 0 !important;
+          }
+          .mt-16 {
+            margin-top: 0 !important;
+          }
+          #printable-invoice-container {
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+        }
+      `}</style>
+
+      {/* ── Page Header (hidden on print) ── */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 print-hide">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
-            IP Billing Wizard
+            ASCAS Inpatient Billing Tool
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Package-based hybrid billing · Full Payment or Item-wise
+            Create, choose format, and generate official printable clinic invoices.
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {STEPS.map((s) => (
-            <div
-              key={s.id}
-              className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-all ${
-                step === s.id
-                  ? "bg-primary text-primary-foreground"
-                  : step > s.id
-                  ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-400"
-              }`}
-            >
-              {step > s.id ? <CheckCircle className="h-3 w-3" /> : <span>{s.id}</span>}
-              <span className="hidden sm:inline">{s.label}</span>
-            </div>
-          ))}
-        </div>
+        
+        {step < 5 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {[
+              { id: 1, label: "Patient details" },
+              { id: 2, label: "Select Package" },
+              { id: 3, label: "Billing Type" },
+              { id: 4, label: "Invoice Preview" },
+            ].map(s => (
+              <div
+                key={s.id}
+                className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full transition-all ${
+                  step === s.id
+                    ? "bg-primary text-primary-foreground shadow"
+                    : step > s.id
+                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                }`}
+              >
+                {step > s.id ? <Check className="h-3 w-3 stroke-[3]" /> : <span>{s.id}</span>}
+                <span className="hidden sm:inline">{s.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <Progress value={((step - 1) / 6) * 100} className="h-1.5" />
+      {step < 5 && (
+        <Progress value={((step - 1) / 3) * 100} className="h-1.5 print-hide" />
+      )}
 
       {/* ════════════════════════════════════════════════════════════
-          STEP 1 — SELECT PATIENT
+          STEP 1: PATIENT DETAILS FORM
       ════════════════════════════════════════════════════════════ */}
       {step === 1 && (
-        <Card className="glass-panel">
-          <CardHeader>
-            <CardTitle className="text-base font-bold flex items-center gap-2">
+        <Card className="glass-panel border border-slate-200 shadow-xl max-w-xl mx-auto">
+          <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b p-5">
+            <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-800 dark:text-slate-100">
               <User className="h-5 w-5 text-primary" />
-              Step 1: Select Inpatient
+              Patient Details Form
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search by patient name or UHID..."
-                value={patientSearch}
-                onChange={(e) => setPatientSearch(e.target.value)}
-                className="w-full h-10 pl-10 pr-4 border rounded-lg text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/40 border-slate-200 dark:border-slate-700"
-              />
-            </div>
-
-            {selectedPatient ? (
-              <div className="p-4 rounded-xl border-2 border-primary/30 bg-primary/5 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">{selectedPatient.name}</h3>
-                    <span className="text-xs font-mono text-primary font-semibold">{selectedPatient.uhid}</span>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => setSelectedPatient(null)}>
-                    <X className="h-3.5 w-3.5 mr-1" /> Change
-                  </Button>
+          <CardContent className="p-6">
+            <form onSubmit={handleNextStep1} className="space-y-4">
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Date</label>
+                  <Input
+                    type="date"
+                    required
+                    value={billDate}
+                    onChange={e => setBillDate(e.target.value)}
+                  />
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                  {[
-                    ["Husband", selectedPatient.husbandName],
-                    ["Consultant", selectedPatient.doctorName.split(" (")[0]],
-                    ["Admitted", formatDate(selectedPatient.admissionDate)],
-                    ["Mobile", selectedPatient.mobileNumber],
-                    ["Age", `${selectedPatient.age} years`],
-                    ["Gender", selectedPatient.gender],
-                  ].map(([k, v]) => (
-                    <div key={k} className="bg-white dark:bg-slate-900 p-2 rounded-lg border">
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold">{k}</p>
-                      <p className="font-semibold text-slate-700 dark:text-slate-200 mt-0.5">{v}</p>
-                    </div>
-                  ))}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Bill Number</label>
+                  <Input
+                    type="text"
+                    disabled
+                    value={billNo}
+                    className="bg-slate-50 font-mono font-bold text-primary dark:bg-slate-900"
+                  />
                 </div>
               </div>
-            ) : (
-              <div className="max-h-64 overflow-y-auto divide-y border rounded-xl">
-                {mockPatients
-                  .filter(
-                    (p) =>
-                      p.name.toLowerCase().includes(patientSearch.toLowerCase()) ||
-                      p.uhid.toLowerCase().includes(patientSearch.toLowerCase())
-                  )
-                  .map((pat) => (
-                    <div
-                      key={pat.id}
-                      onClick={() => setSelectedPatient(pat)}
-                      className="p-3 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors cursor-pointer flex justify-between items-center"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{pat.name}</p>
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {pat.uhid} · {pat.doctorName.split(" (")[0]}
-                        </span>
-                      </div>
-                      <Button size="sm" variant="ghost">
-                        Select →
-                      </Button>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </CardContent>
-          <CardContent className="flex justify-end pt-2 border-t">
-            <Button disabled={!selectedPatient} onClick={next} className="gap-2">
-              Proceed to Category <ArrowRight className="h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* ════════════════════════════════════════════════════════════
-          STEP 2 — SELECT CATEGORY
-      ════════════════════════════════════════════════════════════ */}
-      {step === 2 && (
-        <Card className="glass-panel">
-          <CardHeader>
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Stethoscope className="h-5 w-5 text-primary" />
-              Step 2: Select Package Category
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {PACKAGE_CATEGORIES.filter((c) => c !== "Add-ons / Separate Billing Items").map((cat) => {
-                const count = getPackagesByCategory(cat).length
-                const isSelected = selectedCategory === cat
-                return (
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Patient Name</label>
+                <Input
+                  type="text"
+                  required
+                  placeholder="e.g. Priyadarshini K."
+                  value={patientName}
+                  onChange={e => setPatientName(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Patient ID / File No.</label>
+                  <Input
+                    type="text"
+                    required
+                    placeholder="e.g. ASCAS-9821"
+                    value={patientId}
+                    onChange={e => setPatientId(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Age</label>
+                  <Input
+                    type="number"
+                    required
+                    placeholder="e.g. 32"
+                    value={age}
+                    onChange={e => setAge(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Consulting Doctor</label>
+                <div className="grid grid-cols-2 gap-2">
                   <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`p-4 rounded-xl border-2 text-left transition-all hover:shadow-md ${
-                      isSelected
-                        ? "border-primary bg-primary/10"
-                        : "border-slate-200 dark:border-slate-700 hover:border-primary/40"
+                    type="button"
+                    onClick={() => setDoctorOption("Dr. AP")}
+                    className={`py-2 px-3 border rounded-lg text-sm font-semibold transition-all ${
+                      doctorOption === "Dr. AP"
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-slate-200 dark:border-slate-800 text-slate-600 hover:bg-slate-50"
                     }`}
                   >
-                    <div className={`inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-full mb-2 ${categoryColors[cat] ?? "bg-slate-100 text-slate-600"}`}>
-                      {count} packages
-                    </div>
-                    <p className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-snug">{cat}</p>
-                    {isSelected && (
-                      <div className="flex items-center gap-1 mt-2 text-primary text-xs font-semibold">
-                        <CheckCircle className="h-3.5 w-3.5" /> Selected
-                      </div>
-                    )}
+                    Dr. AP
                   </button>
-                )
-              })}
-            </div>
-          </CardContent>
-          <CardContent className="flex justify-between pt-2 border-t">
-            <Button variant="outline" onClick={back}>
-              <ArrowLeft className="h-4 w-4 mr-1" /> Back
-            </Button>
-            <Button disabled={!selectedCategory} onClick={next} className="gap-2">
-              Browse Packages <ArrowRight className="h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════
-          STEP 3 — SELECT PACKAGE
-      ════════════════════════════════════════════════════════════ */}
-      {step === 3 && selectedCategory && (
-        <Card className="glass-panel">
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Package className="h-5 w-5 text-primary" />
-                Step 3: Select Package
-              </CardTitle>
-              <Badge className={categoryColors[selectedCategory]}>{selectedCategory}</Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search packages..."
-                value={pkgSearch}
-                onChange={(e) => setPkgSearch(e.target.value)}
-                className="w-full h-10 pl-10 pr-4 border rounded-lg text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/40 border-slate-200 dark:border-slate-700"
-              />
-            </div>
-
-            {selectedPackage ? (
-              <div className="p-4 rounded-xl border-2 border-primary/30 bg-primary/5 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100">{selectedPackage.name}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{selectedPackage.description}</p>
-                  </div>
-                  <div className="text-right shrink-0 pl-4">
-                    <p className="text-xl font-extrabold text-primary">{formatCurrency(selectedPackage.fullPaymentAmount)}</p>
-                    <p className="text-[10px] text-muted-foreground">full payment rate</p>
-                    <Button variant="outline" size="sm" className="mt-2" onClick={() => setSelectedPackage(null)}>
-                      Change
-                    </Button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDoctorOption("other")}
+                    className={`py-2 px-3 border rounded-lg text-sm font-semibold transition-all ${
+                      doctorOption === "other"
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-slate-200 dark:border-slate-800 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    Dr. [other]
+                  </button>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <FileText className="h-3.5 w-3.5" />
-                  <span>{selectedPackage.lineItems.filter(i => !i.isOptional || i.price > 0).length} billable components available</span>
-                </div>
-                {selectedPackage.staffNote && (
-                  <div className="flex items-start gap-2 text-xs bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 p-3 rounded-lg">
-                    <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span className="whitespace-pre-line">{selectedPackage.staffNote}</span>
-                  </div>
+                
+                {doctorOption === "other" && (
+                  <Input
+                    type="text"
+                    required
+                    placeholder="Enter consulting doctor's name"
+                    value={customDoctorName}
+                    onChange={e => setCustomDoctorName(e.target.value)}
+                    className="mt-2"
+                  />
                 )}
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
-                {getPackagesByCategory(selectedCategory)
-                  .filter((p) => p.name.toLowerCase().includes(pkgSearch.toLowerCase()))
-                  .map((pkg) => (
-                    <div
-                      key={pkg.id}
-                      onClick={() => setSelectedPackage(pkg)}
-                      className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-primary/50 bg-card hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-all cursor-pointer flex flex-col"
-                    >
-                      <span className="text-[10px] uppercase font-bold text-primary tracking-wide">{pkg.id}</span>
-                      <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 mt-1">{pkg.name}</h4>
-                      <p className="text-xs text-muted-foreground mt-1 flex-1 line-clamp-2">{pkg.description}</p>
-                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                        <div>
-                          <p className="text-base font-extrabold text-primary">{formatCurrency(pkg.fullPaymentAmount)}</p>
-                          <p className="text-[10px] text-muted-foreground">{pkg.lineItems.length} components</p>
-                        </div>
-                        <Button size="sm" variant="ghost">Select →</Button>
-                      </div>
-                    </div>
-                  ))}
+
+              <div className="pt-4 border-t flex justify-end">
+                <Button type="submit" className="gap-2">
+                  Proceed to Package Selection <ArrowRight className="h-4 w-4" />
+                </Button>
               </div>
-            )}
-          </CardContent>
-          <CardContent className="flex justify-between pt-2 border-t">
-            <Button variant="outline" onClick={back}>
-              <ArrowLeft className="h-4 w-4 mr-1" /> Back
-            </Button>
-            <Button disabled={!selectedPackage} onClick={next} className="gap-2">
-              Set Billing Method <ArrowRight className="h-4 w-4" />
-            </Button>
+            </form>
           </CardContent>
         </Card>
       )}
 
       {/* ════════════════════════════════════════════════════════════
-          STEP 4 — BILLING METHOD + ITEM PICKER
+          STEP 2: PACKAGE & ADD-ONS SELECTION
       ════════════════════════════════════════════════════════════ */}
-      {step === 4 && selectedPackage && (
-        <Card className="glass-panel">
-          <CardHeader>
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <ToggleLeft className="h-5 w-5 text-primary" />
-              Step 4: Choose Billing Method
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Method Toggle */}
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => setBillingMethod("full_payment")}
-                className={`p-5 rounded-xl border-2 text-left transition-all ${
-                  billingMethod === "full_payment"
-                    ? "border-primary bg-primary/10 shadow-md"
-                    : "border-slate-200 dark:border-slate-700 hover:border-primary/40"
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  {billingMethod === "full_payment" ? (
-                    <ToggleRight className="h-5 w-5 text-primary" />
-                  ) : (
-                    <ToggleLeft className="h-5 w-5 text-muted-foreground" />
-                  )}
-                  <span className="font-bold text-sm">Full Payment</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Charge the fixed package rate. All inclusions are bundled. Fastest option for standard cases.
-                </p>
-                <p className="text-xl font-extrabold text-primary mt-3">
-                  {formatCurrency(selectedPackage.fullPaymentAmount)}
-                </p>
-              </button>
-
-              <button
-                onClick={() => setBillingMethod("item_wise")}
-                className={`p-5 rounded-xl border-2 text-left transition-all ${
-                  billingMethod === "item_wise"
-                    ? "border-amber-500 bg-amber-50 dark:bg-amber-950/20 shadow-md"
-                    : "border-slate-200 dark:border-slate-700 hover:border-amber-400/40"
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  {billingMethod === "item_wise" ? (
-                    <ToggleRight className="h-5 w-5 text-amber-600" />
-                  ) : (
-                    <ToggleLeft className="h-5 w-5 text-muted-foreground" />
-                  )}
-                  <span className="font-bold text-sm">Other (Item-wise)</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Bill each component individually. Select, deselect, and adjust quantities per procedure.
-                </p>
-                <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 mt-3">
-                  Configurable · {selectedPackage.lineItems.length} items
-                </p>
-              </button>
-            </div>
-
-            {/* Full Payment Summary */}
-            {billingMethod === "full_payment" && (
-              <div className="bg-slate-50 dark:bg-slate-900 border rounded-xl p-4 space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Included Services (Bundled)</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {selectedPackage.lineItems
-                    .filter((i) => !i.isOptional)
-                    .map((item) => (
-                      <div key={item.id} className="flex items-center gap-2 text-xs bg-white dark:bg-slate-800 border p-2 rounded-lg">
-                        <CheckCircle className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        <span className="flex-1 truncate font-medium">{item.name}</span>
-                        <span className="text-muted-foreground shrink-0">{formatCurrency(item.price)}</span>
-                      </div>
-                    ))}
-                </div>
-                {selectedPackage.duplicateBlockList && (
-                  <div className="flex items-start gap-2 text-xs text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-800 p-3 rounded-lg">
-                    <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span>
-                      <strong>Duplicate Block:</strong> The following categories cannot be billed again as add-ons:{" "}
-                      <strong>{selectedPackage.duplicateBlockList.join(", ")}</strong>.
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Item-wise Picker */}
-            {billingMethod === "item_wise" && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Select Components to Bill
-                  </h4>
-                  <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
-                    {formatCurrency(lineItems.filter((l) => l.selected).reduce((s, l) => s + l.item.price * l.qty, 0))} selected
-                  </span>
-                </div>
-
-                {/* Group by category */}
-                {[...new Set(lineItems.map((l) => l.item.category))].map((cat) => (
-                  <div key={cat} className="space-y-1.5">
-                    <div className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full inline-block ${lineItemCategoryColors[cat] ?? "bg-slate-100 text-slate-600"}`}>
-                      {cat}
-                    </div>
-                    {lineItems
-                      .filter((l) => l.item.category === cat)
-                      .map((lineItem) => (
-                        <div
-                          key={lineItem.item.id}
-                          className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                            lineItem.selected
-                              ? "border-amber-400 bg-amber-50/60 dark:bg-amber-950/20"
-                              : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 opacity-60"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={lineItem.selected}
-                            onChange={() => toggleLineItem(lineItem.item.id)}
-                            className="w-4 h-4 accent-amber-500 cursor-pointer shrink-0"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-snug">
-                              {lineItem.item.name}
-                            </p>
-                            {lineItem.item.note && (
-                              <p className="text-[10px] text-muted-foreground mt-0.5">{lineItem.item.note}</p>
-                            )}
-                          </div>
-                          {lineItem.selected && (
-                            <div className="flex items-center gap-2 shrink-0">
-                              <input
-                                type="number"
-                                value={lineItem.qty}
-                                min={1}
-                                onChange={(e) => updateLineQty(lineItem.item.id, Number(e.target.value))}
-                                className="w-14 h-7 text-center text-xs border rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-400"
-                              />
-                            </div>
-                          )}
-                          <span className={`text-xs font-bold shrink-0 ${lineItem.selected ? "text-amber-700 dark:text-amber-300" : "text-slate-400"}`}>
-                            {formatCurrency(lineItem.item.price * lineItem.qty)}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-          <CardContent className="flex justify-between pt-2 border-t">
-            <Button variant="outline" onClick={back}>
-              <ArrowLeft className="h-4 w-4 mr-1" /> Back
-            </Button>
-            <Button onClick={next} className="gap-2">
-              Configure Add-ons <ArrowRight className="h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════
-          STEP 5 — ADD-ONS & DISCOUNT
-      ════════════════════════════════════════════════════════════ */}
-      {step === 5 && (
-        <Card className="glass-panel">
-          <CardHeader>
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Step 5: Add-ons & Discount
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left: Available Add-ons */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Available Add-ons</h4>
-                <div className="relative">
+      {step === 2 && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 print-hide">
+          
+          {/* Left: Package Selection (8 columns) */}
+          <div className="lg:col-span-8 space-y-6">
+            <Card className="glass-panel border-slate-200 shadow-lg">
+              <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                  <Package className="h-5 w-5 text-primary" />
+                  Primary Package Selection
+                </CardTitle>
+                <div className="relative w-full sm:w-60">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <input
                     type="text"
-                    placeholder="Search add-ons..."
-                    value={addOnSearch}
-                    onChange={(e) => setAddOnSearch(e.target.value)}
-                    className="w-full h-8 pl-9 pr-3 border rounded-lg text-xs bg-transparent focus:outline-none focus:ring-1 focus:ring-primary/40 border-slate-200 dark:border-slate-700"
+                    placeholder="Search package name..."
+                    value={packageSearch}
+                    onChange={e => setPackageSearch(e.target.value)}
+                    className="w-full h-8 pl-9 pr-3 border rounded-lg text-xs bg-transparent focus:outline-none focus:ring-1 focus:ring-primary border-slate-200 dark:border-slate-800"
                   />
                 </div>
-
-                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                  {addonCategories
-                    .filter((cat) => filteredAddons.some((a) => a.category === cat))
-                    .map((cat) => (
-                      <div key={cat} className="border rounded-xl overflow-hidden">
-                        <button
-                          onClick={() => toggleAddonCategory(cat)}
-                          className="w-full flex justify-between items-center px-3 py-2 text-xs font-bold bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                        >
-                          <span>{cat}</span>
-                          {expandedAddOnCategories.includes(cat) ? (
-                            <ChevronUp className="h-3.5 w-3.5" />
-                          ) : (
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                        {expandedAddOnCategories.includes(cat) &&
-                          filteredAddons
-                            .filter((a) => a.category === cat)
-                            .map((addon) => {
-                              const isBlocked =
-                                billingMethod === "full_payment" &&
-                                selectedPackage?.duplicateBlockList?.some((b) =>
-                                  addon.name.toLowerCase().includes(b.toLowerCase())
-                                )
-                              return (
-                                <div
-                                  key={addon.id}
-                                  className={`flex items-center justify-between px-3 py-2.5 border-t text-xs transition-colors ${
-                                    isBlocked ? "opacity-40 bg-rose-50 dark:bg-rose-950/10" : "bg-white dark:bg-slate-950"
-                                  }`}
-                                >
-                                  <div>
-                                    <p className="font-semibold text-slate-800 dark:text-slate-100">{addon.name}</p>
-                                    <span className="text-muted-foreground">{formatCurrency(addon.price)}</span>
-                                    {isBlocked && (
-                                      <span className="ml-2 text-[10px] text-rose-600 font-bold">
-                                        BLOCKED (in package)
-                                      </span>
-                                    )}
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-7 text-xs"
-                                    disabled={!!isBlocked}
-                                    onClick={() => handleAddAddon(addon)}
-                                  >
-                                    <Plus className="h-3 w-3 mr-1" /> Add
-                                  </Button>
-                                </div>
-                              )
-                            })}
-                      </div>
-                    ))}
+              </CardHeader>
+              <CardContent className="p-5 space-y-4">
+                
+                {/* Category filters */}
+                <div className="flex gap-1.5 flex-wrap">
+                  {PACKAGE_CATEGORIES.filter(c => c !== "Add-ons / Separate Billing Items").map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveCategory(cat)}
+                      className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all ${
+                        activeCategory === cat
+                          ? "bg-primary text-primary-foreground shadow"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350 hover:bg-slate-200"
+                      }`}
+                    >
+                      {cat === "Cryostorage / Oocyte / Sperm Cryopreservation"
+                        ? "Cryostorage"
+                        : cat === "Embryo Pooling / Oocyte Accumulation"
+                        ? "Embryo Pooling"
+                        : cat === "Surgical / Procedure Packages"
+                        ? "Surgical Procedures"
+                        : cat}
+                    </button>
+                  ))}
                 </div>
-              </div>
 
-              {/* Right: Cart + Discount */}
-              <div className="space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Selected Add-ons ({selectedAddOns.length})
-                </h4>
+                {/* Package listings */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
+                  {filteredPackages.map(pkg => {
+                    const isSelected = selectedPackage?.id === pkg.id
+                    return (
+                      <div
+                        key={pkg.id}
+                        onClick={() => setSelectedPackage(pkg)}
+                        className={`p-4 rounded-xl border-2 text-left cursor-pointer transition-all hover:shadow-md ${
+                          isSelected
+                            ? "border-primary bg-primary/5 dark:bg-primary/10 shadow"
+                            : "border-slate-200 dark:border-slate-800 hover:border-primary/45"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-snug">{pkg.name}</h4>
+                          <span className="font-extrabold text-primary shrink-0">{formatCurrency(pkg.fullPaymentAmount)}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-1.5 line-clamp-2">{pkg.description}</p>
+                        
+                        {pkg.billingNote && (
+                          <div className="text-[10px] text-teal-850 dark:text-teal-300 font-semibold bg-teal-50/60 dark:bg-teal-950/20 px-2 py-1 rounded mt-2.5 flex items-start gap-1">
+                            <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                            <span>{pkg.billingNote}</span>
+                          </div>
+                        )}
 
-                {ruleViolations.length > 0 && (
-                  <div className="p-3 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800 rounded-xl space-y-1">
-                    {ruleViolations.map((v, i) => (
-                      <div key={i} className="flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300">
-                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                        <span>{v.message}</span>
+                        {isSelected && (
+                          <div className="flex items-center gap-1.5 mt-2.5 text-primary text-xs font-bold">
+                            <Check className="h-4 w-4 stroke-[3]" /> Selected
+                          </div>
+                        )}
                       </div>
-                    ))}
+                    )
+                  })}
+                  {filteredPackages.length === 0 && (
+                    <div className="col-span-2 text-center py-10 text-muted-foreground text-xs font-semibold">
+                      No packages found in this category.
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Add-ons list */}
+            <Card className="glass-panel border-slate-200 shadow-lg">
+              <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b px-5 py-3.5 flex flex-row items-center justify-between">
+                <button
+                  onClick={() => setIsAddonSectionOpen(!isAddonSectionOpen)}
+                  className="flex items-center gap-2 text-base font-bold text-slate-800 dark:text-slate-100"
+                >
+                  <Sparkles className="h-5 w-5 text-amber-500" />
+                  Select Add-ons (Optional)
+                  {isAddonSectionOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+                </button>
+                {isAddonSectionOpen && (
+                  <div className="relative w-40 sm:w-48">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Filter add-ons..."
+                      value={addonSearch}
+                      onChange={e => setAddonSearch(e.target.value)}
+                      className="w-full h-7 pl-8 pr-2 border rounded-lg text-[11px] bg-transparent focus:outline-none focus:ring-1 focus:ring-primary border-slate-200 dark:border-slate-800"
+                    />
+                  </div>
+                )}
+              </CardHeader>
+              {isAddonSectionOpen && (
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1">
+                    {filteredAddOns.map(addon => {
+                      const checked = isAddOnSelected(addon.id)
+                      const isPerUnit = isPerUnitAddon(addon.name)
+                      const currentQty = getAddOnQty(addon.id)
+
+                      return (
+                        <div
+                          key={addon.id}
+                          className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                            checked
+                              ? "border-primary/50 bg-primary/5"
+                              : "border-slate-200 dark:border-slate-800"
+                          }`}
+                        >
+                          <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => handleToggleAddOn(addon)}
+                              className="mt-1 w-4 h-4 rounded text-primary focus:ring-primary border-slate-300 cursor-pointer"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{addon.name}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{formatCurrency(addon.price)}</p>
+                            </div>
+                          </div>
+                          
+                          {checked && isPerUnit && (
+                            <div className="flex items-center gap-1.5 shrink-0 pl-3">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase">Qty:</label>
+                              <input
+                                type="number"
+                                min={1}
+                                value={currentQty}
+                                onChange={e => handleUpdateAddOnQty(addon.id, Number(e.target.value))}
+                                className="w-12 h-6 border rounded text-center text-xs font-bold focus:outline-none focus:ring-1 focus:ring-primary"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+
+            {/* Exclusions Management Card */}
+            {selectedPackage && (
+              <Card className="glass-panel border-slate-200 shadow-lg">
+                <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b px-5 py-3.5 flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+                    <Info className="h-4 w-4 text-primary" />
+                    Customize Package Exclusions (Billed Separately)
+                  </div>
+                </CardHeader>
+                <CardContent className="p-5 space-y-4">
+                  <p className="text-[11px] text-muted-foreground">
+                    Exclusions are shown in the <strong>Detailed Payment</strong> format. Customize them here (add new ones or remove default ones) to suit this patient's bill.
+                  </p>
+
+                  {/* Add Custom Exclusion Input */}
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="e.g. Histopathology, anesthesia, room stay..."
+                      value={newExclusionText}
+                      onChange={e => setNewExclusionText(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter") {
+                          e.preventDefault()
+                          handleAddExclusion()
+                        }
+                      }}
+                      className="text-xs h-9"
+                    />
+                    <Button type="button" onClick={handleAddExclusion} size="sm" className="h-9 gap-1 text-xs px-3">
+                      <Plus className="h-3.5 w-3.5" /> Add
+                    </Button>
+                  </div>
+
+                  {/* Exclusions List */}
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                    {exclusions.length > 0 ? (
+                      exclusions.map((excl, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20 text-xs text-slate-700 dark:text-slate-200"
+                        >
+                          <span className="flex-1 pr-2 leading-tight">{excl}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveExclusion(i)}
+                            className="text-slate-400 hover:text-rose-500 p-1 rounded transition-colors shrink-0"
+                            title="Remove Exclusion"
+                          >
+                            <Trash className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic text-center py-4 bg-slate-50/30 dark:bg-slate-900/10 rounded-lg border border-dashed">
+                        No exclusions added. All services will be assumed included.
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Right: Summary panel (4 columns) */}
+          <div className="lg:col-span-4 space-y-6">
+            <Card className="glass-panel border-slate-200 shadow-xl sticky top-6 bg-slate-50/50 dark:bg-slate-900/30">
+              <CardHeader className="border-b px-5 py-4">
+                <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <Layers className="h-4 w-4 text-primary" />
+                  Bill Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-5 space-y-5">
+                
+                {/* Patient details snapshot */}
+                <div className="bg-white dark:bg-slate-900 border rounded-xl p-3 text-xs space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground font-semibold">Patient:</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{patientName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground font-semibold">File ID:</span>
+                    <span className="font-mono font-semibold text-slate-700 dark:text-slate-350">{patientId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground font-semibold">Doctor:</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-350">{getDoctorName()}</span>
+                  </div>
+                </div>
+
+                {/* Selected Package Details */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Primary Package</label>
+                  {selectedPackage ? (
+                    <div className="flex justify-between items-start text-xs border bg-white dark:bg-slate-900 p-3 rounded-xl">
+                      <span className="font-bold text-slate-750 dark:text-slate-150 leading-snug">{selectedPackage.name}</span>
+                      <span className="font-extrabold text-primary shrink-0 ml-4">{formatCurrency(packageAmount)}</span>
+                    </div>
+                  ) : (
+                    <div className="border border-dashed p-4 text-center text-xs text-muted-foreground rounded-xl">
+                      No package selected yet.
+                    </div>
+                  )}
+                </div>
+
+                {/* Selected Add-ons */}
+                {selectedAddOns.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Selected Add-ons</label>
+                    <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+                      {selectedAddOns.map(item => (
+                        <div key={item.addon.id} className="flex justify-between items-center text-xs border bg-white dark:bg-slate-900 p-2.5 rounded-lg">
+                          <div className="min-w-0 pr-2">
+                            <p className="font-bold text-slate-700 dark:text-slate-200 truncate">{item.addon.name}</p>
+                            <p className="text-[10px] text-muted-foreground font-semibold">
+                              {formatCurrency(item.addon.price)} x {item.qty}
+                            </p>
+                          </div>
+                          <span className="font-bold text-slate-750 dark:text-slate-200 shrink-0">
+                            {formatCurrency(item.addon.price * item.qty)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {selectedAddOns.length === 0 ? (
-                    <div className="border border-dashed rounded-xl p-6 text-center text-xs text-muted-foreground">
-                      No add-ons selected yet
-                    </div>
-                  ) : (
-                    selectedAddOns.map((a) => (
-                      <div key={a.addon.id} className="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg text-xs">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{a.addon.name}</p>
-                          <span className="text-muted-foreground">{formatCurrency(a.addon.price)} each</span>
-                        </div>
-                        <input
-                          type="number"
-                          value={a.qty}
-                          min={1}
-                          onChange={(e) => updateAddonQty(a.addon.id, Number(e.target.value))}
-                          className="w-12 h-7 text-center border rounded-lg text-xs bg-white dark:bg-slate-800 focus:outline-none"
-                        />
-                        <span className="font-bold text-primary w-20 text-right">
-                          {formatCurrency(a.addon.price * a.qty)}
-                        </span>
-                        <button
-                          onClick={() => handleRemoveAddon(a.addon.id)}
-                          className="p-1 text-slate-400 hover:text-rose-500 rounded hover:bg-rose-50 dark:hover:bg-rose-950/20"
-                        >
-                          <Trash className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Discount section */}
+                {/* Discount Inputs */}
                 <div className="border-t pt-4 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase">
-                    <BadgePercent className="h-4 w-4" /> Discount
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Discount Concession
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase">Amount (₹)</label>
+                      <label className="text-[9px] font-bold text-slate-500 uppercase">Amount (₹)</label>
                       <Input
                         type="number"
                         placeholder="0"
+                        min={0}
+                        max={subtotal}
                         value={discount || ""}
-                        onChange={(e) => setDiscount(Number(e.target.value))}
+                        onChange={e => setDiscount(Number(e.target.value))}
+                        className="h-8 text-xs font-bold"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase">Reason</label>
+                      <label className="text-[9px] font-bold text-slate-500 uppercase">Concession Reason</label>
                       <Input
                         type="text"
-                        placeholder="e.g. Staff concession"
+                        placeholder="Staff discount..."
                         value={discountNote}
-                        onChange={(e) => setDiscountNote(e.target.value)}
+                        onChange={e => setDiscountNote(e.target.value)}
+                        className="h-8 text-xs"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Running total */}
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-1.5 text-xs">
-                  <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                    <span>Package ({billingMethod === "full_payment" ? "Full" : "Item-wise"})</span>
-                    <span>{formatCurrency(packageAmount)}</span>
+                {/* Calculations summary block */}
+                <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-xl p-4 space-y-2 text-xs">
+                  <div className="flex justify-between text-slate-600 dark:text-slate-350">
+                    <span className="font-semibold">Subtotal:</span>
+                    <span>{formatCurrency(subtotal)}</span>
                   </div>
-                  {addOnTotal > 0 && (
-                    <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                      <span>Add-ons</span>
-                      <span>{formatCurrency(addOnTotal)}</span>
-                    </div>
-                  )}
                   {discount > 0 && (
-                    <div className="flex justify-between text-emerald-600 font-semibold">
-                      <span>Discount{discountNote ? ` (${discountNote})` : ""}</span>
+                    <div className="flex justify-between text-emerald-600 dark:text-emerald-455 font-bold">
+                      <span className="flex items-center gap-0.5">Discount:</span>
                       <span>-{formatCurrency(discount)}</span>
                     </div>
                   )}
                   <div className="flex justify-between font-extrabold text-primary text-sm border-t pt-2 mt-1">
-                    <span>Grand Total</span>
+                    <span>Grand Total:</span>
                     <span>{formatCurrency(grandTotal)}</span>
                   </div>
                 </div>
-              </div>
-            </div>
-          </CardContent>
-          <CardContent className="flex justify-between pt-2 border-t">
-            <Button variant="outline" onClick={back}>
-              <ArrowLeft className="h-4 w-4 mr-1" /> Back
-            </Button>
-            <Button onClick={next} className="gap-2">
-              Preview Invoice <ArrowRight className="h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
+
+                {/* Step buttons */}
+                <div className="pt-4 border-t flex justify-between gap-3">
+                  <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                    <ArrowLeft className="h-4 w-4 mr-1.5" /> Back
+                  </Button>
+                  <Button disabled={!selectedPackage} onClick={handleNextStep2} className="flex-1 gap-1.5">
+                    Choose Format <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       )}
 
       {/* ════════════════════════════════════════════════════════════
-          STEP 6 — INVOICE PREVIEW
+          STEP 3: BILLING FORMAT CHOICE
       ════════════════════════════════════════════════════════════ */}
-      {step === 6 && selectedPatient && selectedPackage && (
-        <Card className="glass-panel">
-          <CardHeader>
-            <CardTitle className="text-base font-bold flex items-center gap-2">
+      {step === 3 && (
+        <Card className="glass-panel border-slate-200 shadow-xl max-w-2xl mx-auto print-hide">
+          <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b p-5">
+            <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-800 dark:text-slate-100">
               <FileText className="h-5 w-5 text-primary" />
-              Step 6: Confirm & Generate Invoice
+              Choose Billing Format
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Invoice preview */}
-            <div
-              id="invoice-preview"
-              className="bg-white dark:bg-slate-950 border rounded-xl shadow-sm text-slate-800 dark:text-slate-100 text-xs"
-            >
-              {/* Header */}
-              <div className="flex justify-between items-start p-5 border-b">
-                <div>
-                  <h2 className="text-base font-extrabold text-primary">ASCAS FERTILITY & WOMEN'S CENTER</h2>
-                  <p className="text-muted-foreground text-[10px] mt-0.5">
-                    No 15, Healthcare Colony, Landmark Crossroad · GST: 33ASCAS1234F1Z5
-                  </p>
-                  <p className="text-muted-foreground text-[10px]">Ph: +91 98765 43210 · ascas@hospital.in</p>
-                </div>
-                <div className="text-right">
-                  <div className="inline-block bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-lg">
-                    IP ESTIMATE SLIP
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Date: {new Date().toLocaleDateString("en-IN")}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-mono">
-                    Ref: DRAFT-{Date.now().toString().slice(-6)}
-                  </p>
-                </div>
-              </div>
+          <CardContent className="p-6 space-y-6">
+            <p className="text-sm text-muted-foreground text-center">
+              Please choose a format for the printable invoice. This determines how inclusions, exclusions, and add-ons are laid out on the receipt.
+            </p>
 
-              {/* Patient details */}
-              <div className="grid grid-cols-2 gap-4 p-5 border-b bg-slate-50 dark:bg-slate-900/50">
-                <div>
-                  <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Patient</p>
-                  <p className="font-bold text-sm">{selectedPatient.name}</p>
-                  <p className="text-muted-foreground">UHID: {selectedPatient.uhid}</p>
-                  <p className="text-muted-foreground">Husband: {selectedPatient.husbandName}</p>
-                  <p className="text-muted-foreground">Mobile: {selectedPatient.mobileNumber}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Clinical</p>
-                  <p className="font-semibold">{selectedPatient.doctorName.split(" (")[0]}</p>
-                  <p className="text-muted-foreground">{selectedPatient.doctorName.split(" (")[1]?.replace(")", "")}</p>
-                  <p className="text-muted-foreground">Admitted: {formatDate(selectedPatient.admissionDate)}</p>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              {/* Inline format choice */}
+              <button
+                onClick={() => handleSelectFormat("inline")}
+                className="p-5 border-2 rounded-xl text-left hover:shadow-md hover:border-primary/50 transition-all border-slate-200 dark:border-slate-850 hover:bg-slate-50/20"
+              >
+                <Badge className="bg-primary text-white mb-2.5">Inline Payment</Badge>
+                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 mb-1">Quick Billing Format</h3>
+                <p className="text-xs text-muted-foreground leading-normal">
+                  Renders package details alongside a specific one-line package billing description, ticked inclusions, selected add-ons, and payment total. Excludes lists are hidden.
+                </p>
+              </button>
 
-              {/* Charges table */}
-              <div className="p-5 space-y-3">
-                <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">Charge Summary</p>
-
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b text-muted-foreground">
-                      <th className="text-left pb-2 font-bold">Description</th>
-                      <th className="text-center pb-2 font-bold">Qty</th>
-                      <th className="text-right pb-2 font-bold">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {/* Package row */}
-                    <tr>
-                      <td className="py-2">
-                        <p className="font-bold">{selectedPackage.name}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {billingMethod === "full_payment" ? "Full Package · All inclusions bundled" : "Item-wise billing"}
-                        </p>
-                        {/* item-wise breakdown */}
-                        {billingMethod === "item_wise" && (
-                          <div className="mt-1 space-y-0.5 pl-3 border-l-2 border-amber-300">
-                            {lineItems.filter((l) => l.selected).map((l) => (
-                              <p key={l.item.id} className="text-[10px] text-muted-foreground">
-                                · {l.item.name} × {l.qty} — {formatCurrency(l.item.price * l.qty)}
-                              </p>
-                            ))}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-2 text-center">1</td>
-                      <td className="py-2 text-right font-bold">{formatCurrency(packageAmount)}</td>
-                    </tr>
-                    {/* Add-ons */}
-                    {selectedAddOns.map((a) => (
-                      <tr key={a.addon.id}>
-                        <td className="py-2">
-                          <p className="font-medium">{a.addon.name}</p>
-                          <p className="text-[10px] text-muted-foreground">{a.addon.category}</p>
-                        </td>
-                        <td className="py-2 text-center">{a.qty}</td>
-                        <td className="py-2 text-right">{formatCurrency(a.addon.price * a.qty)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {/* Totals */}
-                <div className="flex justify-end pt-3 border-t">
-                  <div className="w-56 space-y-1.5">
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Subtotal</span>
-                      <span>{formatCurrency(subtotal)}</span>
-                    </div>
-                    {discount > 0 && (
-                      <div className="flex justify-between text-emerald-600 font-semibold">
-                        <span>Discount{discountNote ? ` (${discountNote})` : ""}</span>
-                        <span>-{formatCurrency(discount)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between font-extrabold text-base text-primary border-t pt-2">
-                      <span>Grand Total</span>
-                      <span>{formatCurrency(grandTotal)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div className="px-5 pb-5 space-y-1.5">
-                <label className="text-[9px] uppercase font-bold text-muted-foreground">Billing Notes</label>
-                <textarea
-                  placeholder="Advance paid, clinical remarks, etc."
-                  value={billingNotes}
-                  onChange={(e) => setBillingNotes(e.target.value)}
-                  className="w-full h-16 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-1 focus:ring-primary text-xs"
-                />
-              </div>
-
-              {/* Footer */}
-              <div className="border-t px-5 py-3 text-center text-[9px] text-muted-foreground">
-                This is a computer-generated estimate. Subject to change upon final discharge assessment. · ASCAS Fertility &
-                Women's Center · Authorised Signatory
-              </div>
+              {/* Detailed format choice */}
+              <button
+                onClick={() => handleSelectFormat("detailed")}
+                className="p-5 border-2 rounded-xl text-left hover:shadow-md hover:border-primary/50 transition-all border-slate-200 dark:border-slate-850 hover:bg-slate-50/20"
+              >
+                <Badge className="bg-teal-650 text-white mb-2.5">Detailed Payment</Badge>
+                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 mb-1">Full Breakdown Format</h3>
+                <p className="text-xs text-muted-foreground leading-normal">
+                  Renders full package inclusions list (checked), selected add-ons with custom quantities in one column, and a separate second column showing standard exclusions (un-checked, marked "Billed separately").
+                </p>
+              </button>
             </div>
-          </CardContent>
-          <CardContent className="flex justify-between pt-2 border-t">
-            <Button variant="outline" onClick={back}>
-              <ArrowLeft className="h-4 w-4 mr-1" /> Back
-            </Button>
-            <Button
-              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
-              disabled={ruleViolations.length > 0}
-              onClick={handleGenerateBill}
-            >
-              <CheckCircle className="h-4 w-4" /> Confirm & Generate Bill
-            </Button>
+
+            <div className="pt-4 border-t flex justify-start">
+              <Button variant="outline" onClick={() => setStep(2)}>
+                <ArrowLeft className="h-4 w-4 mr-1.5" /> Back
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* ════════════════════════════════════════════════════════════
-          STEP 7 — SUCCESS
+          STEP 4: PRINTABLE BILL PREVIEW
       ════════════════════════════════════════════════════════════ */}
-      {step === 7 && selectedPatient && selectedPackage && (
-        <Card className="glass-panel max-w-lg mx-auto">
+      {step === 4 && selectedPackage && (
+        <div className="space-y-6">
+          
+          {/* Action Row - Hidden on print */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50 dark:bg-slate-900 border rounded-xl p-4 print-hide">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="border-primary text-primary font-bold">
+                Format: {billingFormat === "inline" ? "Inline Payment" : "Detailed Payment"}
+              </Badge>
+              <span className="text-xs text-muted-foreground">Verify details below before printing.</span>
+            </div>
+            
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => setStep(3)} className="h-9">
+                <ArrowLeft className="h-4 w-4 mr-1.5" /> Back
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => window.print()} className="h-9 border-slate-250 hover:bg-slate-100">
+                <Printer className="h-4 w-4 mr-1.5" /> Print Bill
+              </Button>
+              <Button size="sm" onClick={handleConfirmAndGenerate} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white">
+                <CheckCircle className="h-4 w-4 mr-1.5" /> Confirm & Generate Bill
+              </Button>
+            </div>
+          </div>
+
+          {/* Hospital Invoice Sheet Container */}
+          <div
+            id="printable-invoice-container"
+            className="bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border rounded-2xl shadow-xl p-8 max-w-3xl mx-auto relative print:border-none print:shadow-none print:rounded-none"
+          >
+            {/* Letterhead Header */}
+            <div className="flex justify-between items-start border-b pb-6">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-6 w-6 text-primary" />
+                  <h2 className="text-xl font-extrabold text-slate-850 dark:text-slate-100 tracking-tight">
+                    ASCAS FERTILITY & WOMEN'S CENTER
+                  </h2>
+                </div>
+                <p className="text-[11px] text-slate-500 italic font-medium leading-none">
+                  Doctor-led. Structured systems. Personal touch.
+                </p>
+                <p className="text-[10px] text-slate-500 mt-2 font-medium">
+                  No 15, Healthcare Colony, GST Road, Chennai, Tamil Nadu
+                </p>
+                <p className="text-[10px] text-slate-500 leading-none">
+                  GSTIN: 33ASCAS1234F1Z5 · Tel: +91 44 2244 8888 · support@ascasfertility.in
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="inline-block bg-primary text-primary-foreground text-xs font-black px-4 py-1.5 rounded-lg tracking-wider uppercase">
+                  ESTIMATE INVOICE
+                </div>
+                <p className="text-[10px] text-slate-500 mt-2 font-semibold font-mono">
+                  Bill No: {billNo}
+                </p>
+                <div className="flex items-center gap-1 justify-end text-[10px] text-slate-500 mt-1">
+                  <Calendar className="h-3 w-3" />
+                  <span>Date: {formatDate(billDate)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Patient & Doctor Block */}
+            <div className="grid grid-cols-2 gap-4 border-b py-5 bg-slate-50/50 dark:bg-slate-900/10 px-4 mt-4 rounded-xl">
+              <div className="space-y-1 text-xs">
+                <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Patient Details</p>
+                <p className="text-sm font-extrabold text-slate-850 dark:text-slate-150">{patientName}</p>
+                <p className="text-slate-500 font-semibold font-mono">File ID: {patientId}</p>
+                <p className="text-slate-500">Age: {age} years</p>
+              </div>
+              <div className="text-right space-y-1 text-xs">
+                <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Clinical details</p>
+                <p className="text-sm font-bold text-slate-750 dark:text-slate-200">Consultant: {getDoctorName()}</p>
+                <p className="text-primary font-semibold text-[11px] mt-2">
+                  Format: {billingFormat === "inline" ? "Inline Payment Plan" : "Detailed Statement"}
+                </p>
+              </div>
+            </div>
+
+            {/* Items calculation summary table */}
+            <div className="mt-6">
+              <table className="w-full text-xs text-left">
+                <thead>
+                  <tr className="border-b-2 pb-2 text-slate-500 font-bold uppercase text-[10px]">
+                    <th className="pb-2">Billing Description</th>
+                    <th className="pb-2 text-center">Qty</th>
+                    <th className="pb-2 text-right">Price</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {/* Package item row */}
+                  <tr>
+                    <td className="py-3.5 pr-4 align-top">
+                      <p className="font-extrabold text-sm text-slate-800 dark:text-slate-100">{selectedPackage.name}</p>
+                      <p className="text-[10px] text-slate-500 mt-1">{selectedPackage.description}</p>
+                      
+                      {/* INLINE format: Render Billing Note */}
+                      {billingFormat === "inline" && selectedPackage.billingNote && (
+                        <div className="mt-2 text-[10px] text-primary bg-primary/5 p-2 rounded-lg border border-primary/10">
+                          <span className="font-bold uppercase text-[9px] tracking-wide block mb-0.5">Coverage Summary:</span>
+                          {selectedPackage.billingNote}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3.5 text-center font-bold align-top">1</td>
+                    <td className="py-3.5 text-right font-extrabold text-slate-800 dark:text-slate-100 align-top">
+                      {formatCurrency(packageAmount)}
+                    </td>
+                  </tr>
+
+                  {/* Add-ons rows */}
+                  {selectedAddOns.map(item => (
+                    <tr key={item.addon.id}>
+                      <td className="py-3 pr-4">
+                        <p className="font-bold text-slate-750 dark:text-slate-200">{item.addon.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{item.addon.category} Add-on</p>
+                      </td>
+                      <td className="py-3 text-center font-bold">{item.qty}</td>
+                      <td className="py-3 text-right font-bold text-slate-750 dark:text-slate-200">
+                        {formatCurrency(item.addon.price * item.qty)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Inclusions list */}
+            {selectedPackage.inclusionsList && selectedPackage.inclusionsList.length > 0 && (
+              <div className="mt-6 border bg-slate-50/20 dark:bg-slate-900/10 p-4 rounded-xl">
+                <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                  {billingFormat === "inline" ? "Inclusions Checklist" : "Package Inclusions (All Included)"}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {selectedPackage.inclusionsList.map((inc, i) => (
+                    <div key={i} className="flex items-start gap-1.5 text-slate-700 dark:text-slate-350">
+                      <span className="h-4 w-4 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                        ✓
+                      </span>
+                      <span>{inc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Detailed Format: Add-ons vs Exclusions two-column layout */}
+            {billingFormat === "detailed" && (
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-5">
+                
+                {/* Column 1: Add-ons summary */}
+                <div className="space-y-3">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 border-b pb-1">
+                    Added Items / Procedures
+                  </p>
+                  {selectedAddOns.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedAddOns.map(item => (
+                        <div key={item.addon.id} className="text-xs flex justify-between gap-2 border bg-slate-50/20 p-2.5 rounded-lg">
+                          <div>
+                            <p className="font-bold text-slate-750 dark:text-slate-200 leading-snug">{item.addon.name}</p>
+                            <p className="text-[10px] text-slate-500 font-semibold">{formatCurrency(item.addon.price)} x {item.qty}</p>
+                          </div>
+                          <span className="font-bold text-slate-750 dark:text-slate-200 shrink-0">
+                            {formatCurrency(item.addon.price * item.qty)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">No extra add-on items documented.</p>
+                  )}
+                </div>
+
+                {/* Column 2: Exclusions */}
+                <div className="space-y-3">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 border-b pb-1">
+                    Package Exclusions (Billed Separately)
+                  </p>
+                  {exclusions && exclusions.length > 0 ? (
+                    <div className="space-y-2">
+                      {exclusions.map((excl, i) => (
+                        <div key={i} className="text-xs flex items-start gap-1.5 p-2 bg-slate-50/20 border border-dashed rounded-lg text-slate-600 dark:text-slate-350">
+                          <span className="h-4 w-4 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center text-[10px] shrink-0 font-bold">
+                            —
+                          </span>
+                          <span>{excl}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">No exclusions documented.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Calculations Totals block */}
+            <div className="mt-6 border-t-2 border-slate-100 pt-4 flex justify-end">
+              <div className="w-64 space-y-2 text-xs">
+                
+                {billingFormat === "detailed" && (
+                  <div className="flex justify-between text-slate-500">
+                    <span className="font-semibold">Subtotal:</span>
+                    <span>{formatCurrency(subtotal)}</span>
+                  </div>
+                )}
+                
+                {discount > 0 && (
+                  <div className="flex justify-between text-emerald-600 dark:text-emerald-455 font-bold">
+                    <span>Discount{discountNote ? ` (${discountNote})` : ""}:</span>
+                    <span>-{formatCurrency(discount)}</span>
+                  </div>
+                )}
+                
+                <div className="flex justify-between text-base font-extrabold text-primary border-t pt-2">
+                  <span>Grand Total:</span>
+                  <span>{formatCurrency(grandTotal)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Billing Rule Disclaimer Note (MUST appear on every bill) */}
+            <div className="mt-6 border-t pt-4 text-[10px] text-slate-500 bg-slate-50/60 p-3.5 rounded-xl border border-slate-200">
+              <p className="font-bold uppercase text-[9px] tracking-wide text-slate-600 mb-1">Clinic Billing Rule:</p>
+              <p className="italic leading-normal">
+                Consultation and monitoring scans included in OPU / egg collection packages and FET packages should not be billed separately. Room stay is optional unless specifically advised.
+              </p>
+              {billingFormat === "detailed" && (
+                <p className="mt-2 font-medium">
+                  Note: Final bill may vary only when additional investigations, medications, room stay, or clinician-approved add-on is documented.
+                </p>
+              )}
+            </div>
+
+            {/* Payment Status Line */}
+            <div className="mt-4 flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b pb-4">
+              <span>Payment status:</span>
+              <span className="text-amber-600 dark:text-amber-400">Pending Reconciliation</span>
+            </div>
+
+            {/* Signatures block */}
+            <div className="mt-12 grid grid-cols-2 gap-12 text-xs">
+              <div className="text-center space-y-6">
+                <div className="h-6" />
+                <div className="border-t border-dashed border-slate-300 dark:border-slate-700" />
+                <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider">Patient / Guardian Signature</p>
+              </div>
+              <div className="text-center space-y-6">
+                <div className="h-6" />
+                <div className="border-t border-dashed border-slate-300 dark:border-slate-700" />
+                <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider">Authorized Signatory / Reception Desk</p>
+              </div>
+            </div>
+
+            {/* Footer stamp */}
+            <div className="mt-8 border-t pt-3 text-center text-[9px] text-slate-400 font-medium leading-relaxed uppercase tracking-wider">
+              Computer Generated Invoice Slip · ASCAS Fertility & Women's Center · GST Road, Chennai
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════
+          STEP 5: SUCCESS DONE
+      ════════════════════════════════════════════════════════════ */}
+      {step === 5 && selectedPackage && (
+        <Card className="glass-panel border-slate-200 shadow-xl max-w-lg mx-auto print-hide">
           <CardContent className="py-12 space-y-6 text-center">
+            
             <div className="h-20 w-20 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 rounded-full flex items-center justify-center mx-auto animate-bounce">
-              <CheckCircle className="h-12 w-12" />
+              <Check className="h-10 w-10 stroke-[3]" />
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Bill Generated!</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                The invoice has been posted and is ready for reconciliation.
+              <h2 className="text-xl font-black text-slate-850 dark:text-slate-100">Invoice Generated successfully!</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                The estimate slip was successfully appended to the local billing records.
               </p>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-900 border rounded-xl p-5 text-left space-y-2 text-sm">
-              {[
-                ["Bill No.", generatedBillNo],
-                ["Patient", selectedPatient.name],
-                ["UHID", selectedPatient.uhid],
-                ["Package", selectedPackage.name],
-                ["Method", billingMethod === "full_payment" ? "Full Payment" : "Item-wise"],
-              ].map(([k, v]) => (
-                <div key={k} className="flex justify-between">
-                  <span className="text-muted-foreground">{k}</span>
-                  <span className="font-semibold">{v}</span>
-                </div>
-              ))}
-              <div className="flex justify-between font-extrabold text-primary text-base border-t pt-2">
-                <span>Grand Total</span>
+            <div className="bg-slate-50 dark:bg-slate-900 border rounded-xl p-5 text-left space-y-2.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground font-semibold">Bill No:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{billNo}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground font-semibold">Patient Name:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{patientName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground font-semibold">Patient File ID:</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-350">{patientId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground font-semibold">Primary Package:</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-350 truncate max-w-xs">{selectedPackage.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground font-semibold">Treating Doctor:</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-350">{getDoctorName()}</span>
+              </div>
+              <div className="flex justify-between border-t pt-2.5 text-primary text-sm font-extrabold">
+                <span>Grand Total:</span>
                 <span>{formatCurrency(grandTotal)}</span>
               </div>
             </div>
 
-            <div className="flex flex-col gap-2.5">
-              <Button onClick={handleDownloadPDF} className="gap-2 w-full">
-                <FileText className="h-4 w-4" /> Download PDF Invoice
+            <div className="flex flex-col gap-2.5 pt-4">
+              <Button onClick={() => navigate("/bills")} className="w-full h-10">
+                View All Bills
               </Button>
-              <Button variant="outline" onClick={() => navigate(`/bills`)} className="gap-2 w-full">
-                <Printer className="h-4 w-4" /> View All Bills
+              <Button variant="outline" onClick={resetWizard} className="w-full h-10">
+                Create Another Bill
               </Button>
-              <Button variant="outline" onClick={resetAndNew} className="w-full">
-                <Plus className="h-4 w-4 mr-1" /> Create Another Bill
-              </Button>
-              <Button variant="ghost" onClick={() => navigate("/")} className="w-full">
+              <Button variant="ghost" onClick={() => navigate("/")} className="w-full h-10">
                 Return to Dashboard
               </Button>
             </div>
+
           </CardContent>
         </Card>
       )}
+
     </div>
   )
 }
