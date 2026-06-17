@@ -36,6 +36,165 @@ import {
   Layers
 } from "lucide-react"
 
+interface OtherItem {
+  name: string
+  price: number
+  note?: string
+  hasQty?: boolean
+  qtyLabel?: string
+  unitText?: string
+}
+
+function getOtherItemsForPackage(pkgId: string, pkgCategory: string): OtherItem[] {
+  if (pkgId === "PKG-ICSI-BASIC" || pkgId === "PKG-ROOM-ICSI-BASIC") {
+    return [
+      { name: "Stimulation medications — gonadotrophins, antagonist, trigger", note: "At drug package rate", price: 0 },
+      { name: "Pre-cycle hormonal blood tests\n(FSH, LH, AMH, E2, prolactin, TSH)", note: "As applicable", price: 0 },
+      { name: "Additional workup blood tests\n(CBC, coagulation, RFT, blood sugar, blood group)", note: "As applicable", price: 0 },
+      { name: "ECG", note: "As applicable", price: 0 },
+      { name: "Echocardiogram (Echo)", note: "As applicable", price: 0 },
+      { name: "Pre-anaesthesia / anaesthetic checkup", note: "As applicable", price: 0 },
+      { name: "Semen analysis + additional andrology workup", note: "As applicable", price: 0 },
+      { name: "Serology panel (HIV, HBsAg, HCV, VDRL)", note: "As applicable", price: 0 },
+      { name: "MF – microfluidic sperm selection", price: 10000 },
+      { name: "PICSI", price: 10000 },
+      { name: "Calcium ionophore", price: 10000 },
+      { name: "PGT-A", price: 25000, hasQty: true, qtyLabel: "embryos", unitText: "per embryo" },
+      { name: "Laser-assisted hatching (LAH)", price: 15000 },
+      { name: "Additional cryolock", price: 5000, hasQty: true, qtyLabel: "locks", unitText: "per lock per year" },
+      { name: "Cryostorage renewal", price: 5000, hasQty: true, qtyLabel: "locks", unitText: "per cryolock per year" },
+      { name: "FET", price: 35000 },
+      { name: "Single room", price: 5000, hasQty: true, qtyLabel: "days", unitText: "per day" },
+      { name: "ICSI Basic + Room", price: 105000 }
+    ]
+  }
+  if (pkgId === "PKG-ICSI-ADV" || pkgId === "PKG-ROOM-ICSI-ADV") {
+    return [
+      { name: "Stimulation medications", note: "At drug package rate", price: 0 },
+      { name: "Pre-cycle hormonal blood tests\n(FSH, LH, AMH, E2, prolactin, TSH)", price: 0 },
+      { name: "Additional workup blood tests\n(CBC, coagulation, RFT, blood sugar, blood group)", price: 0 },
+      { name: "ECG", price: 0 },
+      { name: "Echocardiogram (Echo)", price: 0 },
+      { name: "Pre-anaesthesia / anaesthetic checkup", price: 0 },
+      { name: "Semen analysis + additional andrology workup", price: 0 },
+      { name: "Serology panel\n(HIV, HBsAg, HCV, VDRL)", price: 0 },
+      { name: "Second sperm selection method\n(if both MF and PICSI required – rare)", price: 10000 },
+      { name: "Calcium ionophore", price: 10000 },
+      { name: "PGT-A", price: 25000, hasQty: true, qtyLabel: "embryos", unitText: "per embryo" },
+      { name: "Laser-assisted hatching (LAH)", price: 15000 },
+      { name: "Additional cryolock", price: 5000 },
+      { name: "Cryostorage renewal", price: 5000 },
+      { name: "FET", price: 35000 },
+      { name: "Single room", price: 5000, hasQty: true, qtyLabel: "days", unitText: "/day" },
+      { name: "ICSI Advanced + Room", price: 115000 }
+    ]
+  }
+  if (pkgId === "PKG-ICSI-PGT" || pkgId === "PKG-ROOM-ICSI-PGT") {
+    return [
+      { name: "MF or PICSI (if required)", price: 10000 },
+      { name: "PGT-A beyond 4 embryos", price: 25000, hasQty: true, qtyLabel: "embryos", unitText: "per embryo" },
+      { name: "Additional cryolock", price: 5000 },
+      { name: "Additional FET beyond 1 included", price: 35000 },
+      { name: "Cryostorage renewal", price: 5000 },
+      { name: "Calcium ionophore", price: 10000 },
+      { name: "Laser-assisted hatching (LAH)", price: 15000 },
+      { name: "Stimulation medications", note: "As applicable", price: 0 },
+      { name: "Investigations", note: "As applicable", price: 0 },
+      { name: "Single room", price: 5000, hasQty: true, qtyLabel: "days", unitText: "/day" },
+      { name: "ICSI + PGT-A + Room", price: 225000 }
+    ]
+  }
+  if (pkgId.startsWith("PKG-FET-")) {
+    return [
+      { name: "Endometrial preparation medications\n(estradiol, progesterone)", note: "At MRP", price: 0 },
+      { name: "Luteal phase support medications post-transfer", note: "At MRP", price: 0 },
+      { name: "Additional hormonal blood tests\n(E2, progesterone, beta hCG)", price: 0 },
+      { name: "Serum beta hCG", price: 0 },
+      { name: "Post-transfer follow-up scan", price: 0 },
+      { name: "Endometrial scratch", price: 3000 },
+      { name: "Laser-assisted hatching (LAH)", price: 15000 }
+    ]
+  }
+  if (pkgCategory === "Surgical / Procedure Packages") {
+    return [
+      { name: "Histopathology / tissue biopsy", price: 0 },
+      { name: "Overnight IP stay – room charges", price: 0 },
+      { name: "Operative intervention if findings require", note: "Additional charge", price: 0 }
+    ]
+  }
+  if (pkgId === "PKG-DONOR-EGG") {
+    return [
+      { name: "Recipient hormonal blood tests\n(E2, progesterone, LH monitoring)", price: 0 },
+      { name: "Recipient serology\n(HIV, HBsAg, HCV, VDRL)", price: 0 },
+      { name: "Recipient endometrial preparation medications", note: "At MRP", price: 0 },
+      { name: "Luteal phase support medications", note: "At MRP", price: 0 },
+      { name: "Additional FET beyond 1 included", price: 35000 },
+      { name: "PGT-A", price: 25000, hasQty: true, qtyLabel: "embryos", unitText: "per embryo" },
+      { name: "Laser-assisted hatching (LAH)", price: 15000 },
+      { name: "Additional cryolock / renewal", price: 5000 }
+    ]
+  }
+  if (pkgId === "PKG-DONOR-EMBRYO") {
+    return [
+      { name: "Recipient hormonal blood tests\n(E2, progesterone monitoring)", price: 0 },
+      { name: "Recipient serology\n(HIV, HBsAg, HCV, VDRL)", price: 0 },
+      { name: "Recipient endometrial preparation medications", note: "At MRP", price: 0 },
+      { name: "Luteal phase support medications", note: "At MRP", price: 0 },
+      { name: "Additional FET beyond 1 included", price: 35000 },
+      { name: "PGT-A", price: 25000, hasQty: true, qtyLabel: "embryos", unitText: "per embryo" },
+      { name: "Laser-assisted hatching (LAH)", price: 15000 },
+      { name: "Cryostorage renewal", price: 5000 }
+    ]
+  }
+  if (pkgId === "PKG-EGG-FRZ") {
+    return [
+      { name: "Stimulation medications", note: "At drug package rate", price: 0 },
+      { name: "Pre-cycle hormonal blood tests\n(AMH, FSH, LH, E2, AFC workup)", price: 0 },
+      { name: "Serology panel\n(HIV, HBsAg, HCV, VDRL)", price: 0 },
+      { name: "ECG / Echo / anaesthetic checkup", note: "If required", price: 0 },
+      { name: "ICSI / fertilisation when oocytes used later", note: "At IVF package rate", price: 0 },
+      { name: "Annual oocyte storage renewal after Year 1", price: 20000 }
+    ]
+  }
+  if (pkgId === "PKG-2CYCLE" || pkgId === "PKG-3CYCLE") {
+    return [
+      { name: "MF or PICSI", price: 10000, hasQty: true, qtyLabel: "cycles", unitText: "per cycle" },
+      { name: "PGT-A", price: 25000, hasQty: true, qtyLabel: "embryos", unitText: "per embryo" },
+      { name: "Additional cryolock", price: 5000 },
+      { name: "Cryostorage renewal", price: 5000 },
+      { name: "Additional FET beyond included FET", price: 35000 },
+      { name: "Stimulation medications", note: "At drug package rate", price: 0 },
+      { name: "Pre-cycle investigations", note: "As applicable", price: 0 }
+    ]
+  }
+  if (pkgId === "PKG-CHARITY") {
+    return [
+      { name: "Stimulation medications", note: "At MRP", price: 0 },
+      { name: "Pre-cycle investigations\n(hormones, semen analysis, serology)", price: 0 },
+      { name: "Additional cryolocks beyond 2", price: 5000 },
+      { name: "Cryostorage renewal", price: 5000 },
+      { name: "FET", price: 35000 },
+      { name: "PGT-A", price: 25000, hasQty: true, qtyLabel: "embryos", unitText: "per embryo" },
+      { name: "MF / PICSI", price: 10000 },
+      { name: "Calcium ionophore", price: 10000 }
+    ]
+  }
+  if (pkgCategory === "Cryostorage / Oocyte / Sperm Cryopreservation" || pkgId.startsWith("PKG-SPERM-") || pkgId === "PKG-CRYO-ADD") {
+    return [
+      { name: "Additional cryolock", price: 5000 },
+      { name: "Annual renewal", price: 5000 },
+      { name: "Annual oocyte storage renewal", price: 20000 },
+      { name: "Sperm cryopreservation – processing + first vial", price: 3000 },
+      { name: "Additional sperm vial", price: 1500 },
+      { name: "Annual sperm storage per vial", price: 3000 },
+      { name: "Surgical sperm retrieval – TESA/PESA", note: "As applicable", price: 0 },
+      { name: "Donor sperm", note: "At actual cost", price: 0 },
+      { name: "Sperm transport to another clinic", note: "As applicable", price: 0 }
+    ]
+  }
+  return []
+}
+
 export function BillingWizardPage() {
   const navigate = useNavigate()
 
@@ -77,12 +236,23 @@ export function BillingWizardPage() {
   // Step 3: Billing format choice state
   const [billingFormat, setBillingFormat] = React.useState<"inline" | "detailed">("inline")
 
-  // Initialize exclusions when selected package changes
+  // State to track detailed exclusions/add-ons checked and their quantities
+  const [detailedSelections, setDetailedSelections] = React.useState<Record<string, { checked: boolean, qty: number }>>({})
+
+  // Initialize exclusions and detailed selections when selected package changes
   React.useEffect(() => {
     if (selectedPackage) {
       setExclusions(selectedPackage.exclusionsList || [])
+      
+      const items = getOtherItemsForPackage(selectedPackage.id, selectedPackage.category)
+      const initial: Record<string, { checked: boolean, qty: number }> = {}
+      items.forEach(item => {
+        initial[item.name] = { checked: false, qty: 1 }
+      })
+      setDetailedSelections(initial)
     } else {
       setExclusions([])
+      setDetailedSelections({})
     }
   }, [selectedPackage])
 
@@ -121,7 +291,21 @@ export function BillingWizardPage() {
 
   // Calculations
   const packageAmount = selectedPackage ? selectedPackage.fullPaymentAmount : 0
-  const addOnsTotal = selectedAddOns.reduce((sum, item) => sum + item.addon.price * item.qty, 0)
+  
+  // Calculate detailed exclusions/add-ons list and total
+  const detailedItemsList = selectedPackage ? getOtherItemsForPackage(selectedPackage.id, selectedPackage.category) : []
+  const detailedItemsTotal = detailedItemsList.reduce((sum, item) => {
+    const sel = detailedSelections[item.name]
+    if (sel && sel.checked) {
+      return sum + (item.price || 0) * sel.qty
+    }
+    return sum
+  }, 0)
+
+  const addOnsTotal = billingFormat === "detailed"
+    ? detailedItemsTotal
+    : selectedAddOns.reduce((sum, item) => sum + item.addon.price * item.qty, 0)
+
   const subtotal = packageAmount + addOnsTotal
   const grandTotal = Math.max(0, subtotal - discount)
 
@@ -181,16 +365,41 @@ export function BillingWizardPage() {
   const handleConfirmAndGenerate = () => {
     if (!selectedPackage) return
 
+    const generatedAddOns = billingFormat === "detailed"
+      ? detailedItemsList
+          .filter(item => {
+            const sel = detailedSelections[item.name]
+            return sel && sel.checked
+          })
+          .map(item => {
+            const sel = detailedSelections[item.name]
+            const qtyText = sel.qty > 1 ? ` (x${sel.qty})` : ""
+            return {
+              name: item.name + qtyText,
+              price: (item.price || 0) * sel.qty
+            }
+          })
+      : selectedAddOns.map(item => ({
+          name: item.qty > 1 ? `${item.addon.name} (x${item.qty})` : item.addon.name,
+          price: item.addon.price * item.qty
+        }))
+
+    const generatedExclusions = billingFormat === "detailed"
+      ? detailedItemsList
+          .filter(item => {
+            const sel = detailedSelections[item.name]
+            return !sel || !sel.checked
+          })
+          .map(item => item.name)
+      : exclusions
+
     const newBill: Bill = {
       billNo,
       uhid: patientId,
       patientName,
       packageName: selectedPackage.name,
       packagePrice: packageAmount,
-      addOns: selectedAddOns.map(item => ({
-        name: item.qty > 1 ? `${item.addon.name} (x${item.qty})` : item.addon.name,
-        price: item.addon.price * item.qty
-      })),
+      addOns: generatedAddOns,
       roomCharges: 0,
       additionalCharges: 0,
       discount,
@@ -201,7 +410,7 @@ export function BillingWizardPage() {
       doctorName: getDoctorName(),
       billingNotes: discountNote ? `Discount note: ${discountNote}` : undefined,
       billingMethod: "full_payment",
-      exclusions: exclusions
+      exclusions: generatedExclusions
     }
 
     mockBills.unshift(newBill)
@@ -874,264 +1083,320 @@ export function BillingWizardPage() {
           STEP 4: PRINTABLE BILL PREVIEW
       ════════════════════════════════════════════════════════════ */}
       {step === 4 && selectedPackage && (
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* Action Row - Hidden on print */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50 dark:bg-slate-900 border rounded-xl p-4 print-hide">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="border-primary text-primary font-bold">
-                Format: {billingFormat === "inline" ? "Inline Payment" : "Detailed Payment"}
-              </Badge>
-              <span className="text-xs text-muted-foreground">Verify details below before printing.</span>
-            </div>
-            
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <Button variant="outline" size="sm" onClick={() => setStep(3)} className="h-9">
-                <ArrowLeft className="h-4 w-4 mr-1.5" /> Back
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => window.print()} className="h-9 border-slate-250 hover:bg-slate-100">
-                <Printer className="h-4 w-4 mr-1.5" /> Print Bill
-              </Button>
-              <Button size="sm" onClick={handleConfirmAndGenerate} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white">
-                <CheckCircle className="h-4 w-4 mr-1.5" /> Confirm & Generate Bill
-              </Button>
-            </div>
-          </div>
-
-          {/* Hospital Invoice Sheet Container */}
-          <div
-            id="printable-invoice-container"
-            className="bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border rounded-2xl shadow-xl p-8 max-w-3xl mx-auto relative print:border-none print:shadow-none print:rounded-none"
-          >
-            {/* Letterhead Header */}
-            <div className="flex justify-between items-start border-b pb-6">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-6 w-6 text-primary" />
-                  <h2 className="text-xl font-extrabold text-slate-850 dark:text-slate-100 tracking-tight">
-                    ASCAS FERTILITY & WOMEN'S CENTER
-                  </h2>
-                </div>
-                <p className="text-[11px] text-slate-500 italic font-medium leading-none">
-                  Doctor-led. Structured systems. Personal touch.
-                </p>
-                <p className="text-[10px] text-slate-500 mt-2 font-medium">
-                  No 15, Healthcare Colony, GST Road, Chennai, Tamil Nadu
-                </p>
-                <p className="text-[10px] text-slate-500 leading-none">
-                  GSTIN: 33ASCAS1234F1Z5 · Tel: +91 44 2244 8888 · support@ascasfertility.in
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="inline-block bg-primary text-primary-foreground text-xs font-black px-4 py-1.5 rounded-lg tracking-wider uppercase">
-                  ESTIMATE INVOICE
-                </div>
-                <p className="text-[10px] text-slate-500 mt-2 font-semibold font-mono">
-                  Bill No: {billNo}
-                </p>
-                <div className="flex items-center gap-1 justify-end text-[10px] text-slate-500 mt-1">
-                  <Calendar className="h-3 w-3" />
-                  <span>Date: {formatDate(billDate)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Patient & Doctor Block */}
-            <div className="grid grid-cols-2 gap-4 border-b py-5 bg-slate-50/50 dark:bg-slate-900/10 px-4 mt-4 rounded-xl">
-              <div className="space-y-1 text-xs">
-                <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Patient Details</p>
-                <p className="text-sm font-extrabold text-slate-850 dark:text-slate-150">{patientName}</p>
-                <p className="text-slate-500 font-semibold font-mono">File ID: {patientId}</p>
-                <p className="text-slate-500">Age: {age} years</p>
-              </div>
-              <div className="text-right space-y-1 text-xs">
-                <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Clinical details</p>
-                <p className="text-sm font-bold text-slate-750 dark:text-slate-200">Consultant: {getDoctorName()}</p>
-                <p className="text-primary font-semibold text-[11px] mt-2">
-                  Format: {billingFormat === "inline" ? "Inline Payment Plan" : "Detailed Statement"}
-                </p>
-              </div>
-            </div>
-
-            {/* Items calculation summary table */}
-            <div className="mt-6">
-              <table className="w-full text-xs text-left">
-                <thead>
-                  <tr className="border-b-2 pb-2 text-slate-500 font-bold uppercase text-[10px]">
-                    <th className="pb-2">Billing Description</th>
-                    <th className="pb-2 text-center">Qty</th>
-                    <th className="pb-2 text-right">Price</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {/* Package item row */}
-                  <tr>
-                    <td className="py-3.5 pr-4 align-top">
-                      <p className="font-extrabold text-sm text-slate-800 dark:text-slate-100">{selectedPackage.name}</p>
-                      <p className="text-[10px] text-slate-500 mt-1">{selectedPackage.description}</p>
-                      
-                      {/* INLINE format: Render Billing Note */}
-                      {billingFormat === "inline" && selectedPackage.billingNote && (
-                        <div className="mt-2 text-[10px] text-primary bg-primary/5 p-2 rounded-lg border border-primary/10">
-                          <span className="font-bold uppercase text-[9px] tracking-wide block mb-0.5">Coverage Summary:</span>
-                          {selectedPackage.billingNote}
+          {/* Customization Panel (only on screen when format is detailed) */}
+          {billingFormat === "detailed" && (
+            <div className="lg:col-span-4 space-y-4 print-hide">
+              <Card className="glass-panel border-slate-200 shadow-md">
+                <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b p-4">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-850 dark:text-slate-100 font-sans">
+                    <Sparkles className="h-4.5 w-4.5 text-primary" />
+                    Edit Exclusions / Add-ons
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 space-y-3 max-h-[600px] overflow-y-auto">
+                  <p className="text-[11px] text-muted-foreground font-sans">
+                    Check items to include them as active bill charges. Unchecked items show as exclusions.
+                  </p>
+                  <div className="space-y-2.5">
+                    {detailedItemsList.map((item, idx) => {
+                      const sel = detailedSelections[item.name] || { checked: false, qty: 1 }
+                      return (
+                        <div key={idx} className="flex flex-col p-2.5 border rounded-lg bg-white dark:bg-slate-900 shadow-sm gap-2 font-sans">
+                          <div className="flex items-start gap-2">
+                            <input
+                              type="checkbox"
+                              checked={sel.checked}
+                              onChange={(e) => {
+                                setDetailedSelections(prev => ({
+                                  ...prev,
+                                  [item.name]: { ...prev[item.name], checked: e.target.checked }
+                                }))
+                              }}
+                              className="mt-1 w-4 h-4 rounded text-primary focus:ring-primary border-slate-300 cursor-pointer"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-tight">
+                                {item.name.split("\n").join(" ")}
+                              </p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[10px] text-primary font-bold">
+                                  {item.price > 0 ? formatCurrency(item.price) : "No Charge"}
+                                </span>
+                                {item.note && (
+                                  <span className="text-[9px] text-muted-foreground font-semibold">
+                                    ({item.note})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          {sel.checked && item.hasQty && (
+                            <div className="flex items-center gap-2 justify-end pt-1 border-t border-dashed">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase">
+                                Qty ({item.qtyLabel}):
+                              </span>
+                              <input
+                                type="number"
+                                min={1}
+                                value={sel.qty}
+                                onChange={(e) => {
+                                  const val = Math.max(1, parseInt(e.target.value) || 1)
+                                  setDetailedSelections(prev => ({
+                                    ...prev,
+                                    [item.name]: { ...prev[item.name], qty: val }
+                                  }))
+                                }}
+                                className="w-16 h-7 border rounded text-center text-xs font-bold focus:outline-none focus:ring-1 focus:ring-primary"
+                              />
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </td>
-                    <td className="py-3.5 text-center font-bold align-top">1</td>
-                    <td className="py-3.5 text-right font-extrabold text-slate-800 dark:text-slate-100 align-top">
-                      {formatCurrency(packageAmount)}
-                    </td>
-                  </tr>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-                  {/* Add-ons rows */}
-                  {selectedAddOns.map(item => (
-                    <tr key={item.addon.id}>
-                      <td className="py-3 pr-4">
-                        <p className="font-bold text-slate-750 dark:text-slate-200">{item.addon.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{item.addon.category} Add-on</p>
+          {/* Printable Invoice Column */}
+          <div className={billingFormat === "detailed" ? "lg:col-span-8 w-full space-y-6" : "lg:col-span-12 w-full space-y-6"}>
+            
+            {/* Action Row - Hidden on print */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50 dark:bg-slate-900 border rounded-xl p-4 print-hide">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="border-primary text-primary font-bold font-sans">
+                  Format: {billingFormat === "inline" ? "Inline Payment" : "Detailed Payment"}
+                </Badge>
+                <span className="text-xs text-muted-foreground font-sans">Verify details below before printing.</span>
+              </div>
+              
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <Button variant="outline" size="sm" onClick={() => setStep(3)} className="h-9">
+                  <ArrowLeft className="h-4 w-4 mr-1.5" /> Back
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => window.print()} className="h-9 border-slate-250 hover:bg-slate-100">
+                  <Printer className="h-4 w-4 mr-1.5" /> Print Bill
+                </Button>
+                <Button size="sm" onClick={handleConfirmAndGenerate} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white">
+                  <CheckCircle className="h-4 w-4 mr-1.5" /> Confirm & Generate Bill
+                </Button>
+              </div>
+            </div>
+
+            {/* Hospital Invoice Sheet Container */}
+            <div
+              id="printable-invoice-container"
+              className="bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border rounded-2xl shadow-xl p-8 max-w-3xl mx-auto relative print:border-none print:shadow-none print:rounded-none"
+            >
+              {/* Letterhead Header */}
+              <div className="flex justify-between items-start border-b pb-6">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-6 w-6 text-primary" />
+                    <h2 className="text-xl font-extrabold text-slate-850 dark:text-slate-100 tracking-tight">
+                      ASCAS FERTILITY & WOMEN'S CENTER
+                    </h2>
+                  </div>
+                  <p className="text-[11px] text-slate-500 italic font-medium leading-none">
+                    Doctor-led. Structured systems. Personal touch.
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-2 font-medium">
+                    No 15, Healthcare Colony, GST Road, Chennai, Tamil Nadu
+                  </p>
+                  <p className="text-[10px] text-slate-500 leading-none">
+                    GSTIN: 33ASCAS1234F1Z5 · Tel: +91 44 2244 8888 · support@ascasfertility.in
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="inline-block bg-primary text-primary-foreground text-xs font-black px-4 py-1.5 rounded-lg tracking-wider uppercase">
+                    ESTIMATE INVOICE
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-2 font-semibold font-mono">
+                    Bill No: {billNo}
+                  </p>
+                  <div className="flex items-center gap-1 justify-end text-[10px] text-slate-500 mt-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>Date: {formatDate(billDate)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Patient & Doctor Block */}
+              <div className="grid grid-cols-2 gap-4 border-b py-5 bg-slate-50/50 dark:bg-slate-900/10 px-4 mt-4 rounded-xl">
+                <div className="space-y-1 text-xs">
+                  <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Patient Details</p>
+                  <p className="text-sm font-extrabold text-slate-850 dark:text-slate-150">{patientName}</p>
+                  <p className="text-slate-500 font-semibold font-mono">File ID: {patientId}</p>
+                  <p className="text-slate-500">Age: {age} years</p>
+                </div>
+                <div className="text-right space-y-1 text-xs">
+                  <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Clinical details</p>
+                  <p className="text-sm font-bold text-slate-750 dark:text-slate-200">Consultant: {getDoctorName()}</p>
+                  <p className="text-primary font-semibold text-[11px] mt-2">
+                    Format: {billingFormat === "inline" ? "Inline Payment Plan" : "Detailed Statement"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Items calculation summary table */}
+              <div className="mt-6">
+                <table className="w-full text-xs text-left">
+                  <thead>
+                    <tr className="border-b-2 pb-2 text-slate-500 font-bold uppercase text-[10px]">
+                      <th className="pb-2">Billing Description</th>
+                      <th className="pb-2 text-center">Qty</th>
+                      <th className="pb-2 text-right">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {/* Package item row */}
+                    <tr>
+                      <td className="py-3.5 pr-4 align-top">
+                        <p className="font-extrabold text-sm text-slate-800 dark:text-slate-100">{selectedPackage.name}</p>
+                        <p className="text-[10px] text-slate-500 mt-1">{selectedPackage.description}</p>
+                        
+                        {/* INLINE format: Render Billing Note */}
+                        {billingFormat === "inline" && selectedPackage.billingNote && (
+                          <div className="mt-2 text-[10px] text-primary bg-primary/5 p-2 rounded-lg border border-primary/10">
+                            <span className="font-bold uppercase text-[9px] tracking-wide block mb-0.5">Coverage Summary:</span>
+                            {selectedPackage.billingNote}
+                          </div>
+                        )}
                       </td>
-                      <td className="py-3 text-center font-bold">{item.qty}</td>
-                      <td className="py-3 text-right font-bold text-slate-750 dark:text-slate-200">
-                        {formatCurrency(item.addon.price * item.qty)}
+                      <td className="py-3.5 text-center font-bold align-top">1</td>
+                      <td className="py-3.5 text-right font-extrabold text-slate-800 dark:text-slate-100 align-top">
+                        {formatCurrency(packageAmount)}
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
 
-            {/* Inclusions list */}
-            {selectedPackage.inclusionsList && selectedPackage.inclusionsList.length > 0 && (
-              <div className="mt-6 border bg-slate-50/20 dark:bg-slate-900/10 p-4 rounded-xl">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">
-                  {billingFormat === "inline" ? "Inclusions Checklist" : "Package Inclusions (All Included)"}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  {selectedPackage.inclusionsList.map((inc, i) => (
-                    <div key={i} className="flex items-start gap-1.5 text-slate-700 dark:text-slate-350">
-                      <span className="h-4 w-4 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">
-                        ✓
-                      </span>
-                      <span>{inc}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Detailed Format: Add-ons vs Exclusions two-column layout */}
-            {billingFormat === "detailed" && (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-5">
-                
-                {/* Column 1: Add-ons summary */}
-                <div className="space-y-3">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 border-b pb-1">
-                    Added Items / Procedures
-                  </p>
-                  {selectedAddOns.length > 0 ? (
-                    <div className="space-y-2">
-                      {selectedAddOns.map(item => (
-                        <div key={item.addon.id} className="text-xs flex justify-between gap-2 border bg-slate-50/20 p-2.5 rounded-lg">
-                          <div>
-                            <p className="font-bold text-slate-750 dark:text-slate-200 leading-snug">{item.addon.name}</p>
-                            <p className="text-[10px] text-slate-500 font-semibold">{formatCurrency(item.addon.price)} x {item.qty}</p>
-                          </div>
-                          <span className="font-bold text-slate-750 dark:text-slate-200 shrink-0">
+                    {/* Add-ons / Exclusions rows */}
+                    {billingFormat === "detailed" ? (
+                      detailedItemsList
+                        .filter(item => {
+                          const sel = detailedSelections[item.name]
+                          return sel && sel.checked
+                        })
+                        .map((item, idx) => {
+                          const sel = detailedSelections[item.name]
+                          return (
+                            <tr key={idx}>
+                              <td className="py-3 pr-4">
+                                <p className="font-bold text-slate-750 dark:text-slate-200">
+                                  {item.name.split("\n").join(" ")}
+                                </p>
+                                {item.note && <p className="text-[10px] text-muted-foreground">{item.note}</p>}
+                              </td>
+                              <td className="py-3 text-center font-bold">{sel.qty}</td>
+                              <td className="py-3 text-right font-bold text-slate-750 dark:text-slate-200">
+                                {item.price > 0 ? formatCurrency(item.price * sel.qty) : "As applicable"}
+                              </td>
+                            </tr>
+                          )
+                        })
+                    ) : (
+                      selectedAddOns.map(item => (
+                        <tr key={item.addon.id}>
+                          <td className="py-3 pr-4">
+                            <p className="font-bold text-slate-750 dark:text-slate-200">{item.addon.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{item.addon.category} Add-on</p>
+                          </td>
+                          <td className="py-3 text-center font-bold">{item.qty}</td>
+                          <td className="py-3 text-right font-bold text-slate-750 dark:text-slate-200">
                             {formatCurrency(item.addon.price * item.qty)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground italic">No extra add-on items documented.</p>
-                  )}
-                </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-                {/* Column 2: Exclusions */}
-                <div className="space-y-3">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 border-b pb-1">
-                    Package Exclusions (Billed Separately)
+              {/* Inclusions list */}
+              {billingFormat !== "detailed" && selectedPackage.inclusionsList && selectedPackage.inclusionsList.length > 0 && (
+                <div className="mt-6 border bg-slate-50/20 dark:bg-slate-900/10 p-4 rounded-xl">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                    {billingFormat === "inline" ? "Inclusions Checklist" : "Package Inclusions (All Included)"}
                   </p>
-                  {exclusions && exclusions.length > 0 ? (
-                    <div className="space-y-2">
-                      {exclusions.map((excl, i) => (
-                        <div key={i} className="text-xs flex items-start gap-1.5 p-2 bg-slate-50/20 border border-dashed rounded-lg text-slate-600 dark:text-slate-350">
-                          <span className="h-4 w-4 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center text-[10px] shrink-0 font-bold">
-                            —
-                          </span>
-                          <span>{excl}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground italic">No exclusions documented.</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Calculations Totals block */}
-            <div className="mt-6 border-t-2 border-slate-100 pt-4 flex justify-end">
-              <div className="w-64 space-y-2 text-xs">
-                
-                {billingFormat === "detailed" && (
-                  <div className="flex justify-between text-slate-500">
-                    <span className="font-semibold">Subtotal:</span>
-                    <span>{formatCurrency(subtotal)}</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {selectedPackage.inclusionsList.map((inc, i) => (
+                      <div key={i} className="flex items-start gap-1.5 text-slate-700 dark:text-slate-350">
+                        <span className="h-4 w-4 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                          ✓
+                        </span>
+                        <span>{inc}</span>
+                      </div>
+                    ))}
                   </div>
-                )}
-                
-                {discount > 0 && (
-                  <div className="flex justify-between text-emerald-600 dark:text-emerald-455 font-bold">
-                    <span>Discount{discountNote ? ` (${discountNote})` : ""}:</span>
-                    <span>-{formatCurrency(discount)}</span>
-                  </div>
-                )}
-                
-                <div className="flex justify-between text-base font-extrabold text-primary border-t pt-2">
-                  <span>Grand Total:</span>
-                  <span>{formatCurrency(grandTotal)}</span>
                 </div>
-              </div>
-            </div>
-
-            {/* Billing Rule Disclaimer Note (MUST appear on every bill) */}
-            <div className="mt-6 border-t pt-4 text-[10px] text-slate-500 bg-slate-50/60 p-3.5 rounded-xl border border-slate-200">
-              <p className="font-bold uppercase text-[9px] tracking-wide text-slate-600 mb-1">Clinic Billing Rule:</p>
-              <p className="italic leading-normal">
-                Consultation and monitoring scans included in OPU / egg collection packages and FET packages should not be billed separately. Room stay is optional unless specifically advised.
-              </p>
-              {billingFormat === "detailed" && (
-                <p className="mt-2 font-medium">
-                  Note: Final bill may vary only when additional investigations, medications, room stay, or clinician-approved add-on is documented.
-                </p>
               )}
-            </div>
 
-            {/* Payment Status Line */}
-            <div className="mt-4 flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b pb-4">
-              <span>Payment status:</span>
-              <span className="text-amber-600 dark:text-amber-400">Pending Reconciliation</span>
-            </div>
 
-            {/* Signatures block */}
-            <div className="mt-12 grid grid-cols-2 gap-12 text-xs">
-              <div className="text-center space-y-6">
-                <div className="h-6" />
-                <div className="border-t border-dashed border-slate-300 dark:border-slate-700" />
-                <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider">Patient / Guardian Signature</p>
+
+              {/* Calculations Totals block */}
+              <div className="mt-6 border-t-2 border-slate-100 pt-4 flex justify-end">
+                <div className="w-64 space-y-2 text-xs">
+                  
+                  {billingFormat === "detailed" && (
+                    <div className="flex justify-between text-slate-500">
+                      <span className="font-semibold">Subtotal:</span>
+                      <span>{formatCurrency(subtotal)}</span>
+                    </div>
+                  )}
+                  
+                  {discount > 0 && (
+                    <div className="flex justify-between text-emerald-600 dark:text-emerald-455 font-bold">
+                      <span>Discount{discountNote ? ` (${discountNote})` : ""}:</span>
+                      <span>-{formatCurrency(discount)}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between text-base font-extrabold text-primary border-t pt-2">
+                    <span>GRAND TOTAL:</span>
+                    <span>{formatCurrency(grandTotal)}</span>
+                  </div>
+                </div>
               </div>
-              <div className="text-center space-y-6">
-                <div className="h-6" />
-                <div className="border-t border-dashed border-slate-300 dark:border-slate-700" />
-                <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider">Authorized Signatory / Reception Desk</p>
-              </div>
-            </div>
 
-            {/* Footer stamp */}
-            <div className="mt-8 border-t pt-3 text-center text-[9px] text-slate-400 font-medium leading-relaxed uppercase tracking-wider">
-              Computer Generated Invoice Slip · ASCAS Fertility & Women's Center · GST Road, Chennai
+              {/* Billing Rule Disclaimer Note (MUST appear on every bill) */}
+              <div className="mt-6 border-t pt-4 text-[10px] text-slate-500 bg-slate-50/60 p-3.5 rounded-xl border border-slate-200">
+                <p className="font-bold uppercase text-[9px] tracking-wide text-slate-600 mb-1">Clinic Billing Rule:</p>
+                <p className="italic leading-normal">
+                  Consultation and monitoring scans included in OPU / egg collection packages and FET packages should not be billed separately. Room stay is optional unless specifically advised.
+                </p>
+                {billingFormat === "detailed" && (
+                  <p className="mt-2 font-medium">
+                    Note: Final bill may vary only when additional investigations, medications, room stay, or clinician-approved add-on is documented.
+                  </p>
+                )}
+              </div>
+
+              {/* Payment Status Line */}
+              <div className="mt-4 flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b pb-4">
+                <span>Payment status:</span>
+                <span className="text-amber-600 dark:text-amber-400">Pending Reconciliation</span>
+              </div>
+
+              {/* Signatures block */}
+              <div className="mt-12 grid grid-cols-2 gap-12 text-xs">
+                <div className="text-center space-y-6">
+                  <div className="h-6" />
+                  <div className="border-t border-dashed border-slate-300 dark:border-slate-700" />
+                  <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider">Patient / Guardian Signature</p>
+                </div>
+                <div className="text-center space-y-6">
+                  <div className="h-6" />
+                  <div className="border-t border-dashed border-slate-300 dark:border-slate-700" />
+                  <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider">Authorized Signatory / Reception Desk</p>
+                </div>
+              </div>
+
+              {/* Footer stamp */}
+              <div className="mt-8 border-t pt-3 text-center text-[9px] text-slate-400 font-medium leading-relaxed uppercase tracking-wider">
+                Computer Generated Invoice Slip · ASCAS Fertility & Women's Center · GST Road, Chennai
+              </div>
             </div>
           </div>
         </div>
