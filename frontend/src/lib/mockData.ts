@@ -51,6 +51,7 @@ export interface Bill {
   selectedLineItems?: { id: string; name: string; price: number; category: string; qty: number }[]
   categoryName?: string
   exclusions?: string[]
+  billingFormat?: "inline" | "detailed"
 }
 
 export interface User {

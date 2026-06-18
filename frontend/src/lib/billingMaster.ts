@@ -36,7 +36,9 @@ export interface PackageMaster {
   staffNote?: string
   billingNote?: string
   inclusionsList?: string[]
+  freeMonitoringList?: string[]
   exclusionsList?: string[]
+  policiesList?: string[]
 }
 
 export interface AddOnItem {
@@ -957,109 +959,143 @@ export const PACKAGE_MASTER: PackageMaster[] = [
 
   {
     id: "PKG-EGG-FRZ",
-    name: "Oocyte vitrification / egg freezing package",
+    name: "Oocyte Vitrification (Egg Freezing)",
     category: "Cryostorage / Oocyte / Sperm Cryopreservation",
     fullPaymentAmount: 90000,
-    description: "Oocyte vitrification — complete cycle including OPU + freezing + 1-year storage.",
-    staffNote: "Package includes: pre-cycle consultation, ovarian reserve assessment, monitoring scans, OPU, anaesthesia, vitrification, one-year storage.",
-    billingNote: "Stimulation monitoring, OPU, vitrification and 1-year storage included. Stimulation medicines and pre-cycle investigations separate.",
+    description: "Complete cycle including OPU, freezing, and first year storage.",
+    staffNote: "Package includes: consultation, reserve assessment, monitoring, OPU, anaesthesia, vitrification, one-year storage.",
+    billingNote: "Oocyte vitrification package including stimulation monitoring, OPU, vitrification, and 1st year storage.",
     inclusionsList: [
-      "Stimulation monitoring consultations + follicular scans",
-      "OPU (ovum pick-up) procedure",
-      "OT charges + anaesthesia + anaesthetist fee",
+      "Initial fertility consultation",
+      "Ovarian reserve assessment and treatment planning",
+      "Monitoring consultations during stimulation",
+      "Follicular monitoring scans (TVS)",
+      "OPU (Ovum Pick-Up) procedure",
+      "OT / theatre charges",
+      "Anaesthetist fee",
+      "Sedation / anaesthesia medications",
       "Embryologist fee",
-      "Oocyte vitrification",
-      "1-year cryostorage"
+      "Oocyte identification and assessment",
+      "Oocyte vitrification procedure",
+      "First year oocyte cryostorage included"
     ],
     exclusionsList: [
       "Stimulation medications",
-      "Pre-cycle investigations"
+      "Pre-cycle hormonal investigations",
+      "Additional blood investigations",
+      "Serology panel",
+      "ECG",
+      "Echocardiogram (Echo)",
+      "Pre-anaesthetic check-up (PAC)",
+      "Future utilisation of frozen oocytes",
+      "Additional cryostorage after first year",
+      "Emergency thaw and refreeze"
+    ],
+    policiesList: [
+      "First year storage is included.",
+      "Annual renewal after Year 1: ₹20,000 per year.",
+      "Renewal reminders should be sent before expiry.",
+      "Oocytes can be stored long-term as per applicable ART regulations.",
+      "Written patient consent is required for: Continued storage, Disposal, Transfer to another centre"
     ],
     lineItems: PKG_EGG_FRZ_ITEMS,
-    duplicateBlockList: ["Pre-cycle", "Ovarian", "Monitoring", "OPU", "OT", "Anaesthetist", "Sedation", "Embryologist", "vitrification", "storage"],
+    duplicateBlockList: ["consultation", "assessment", "Monitoring", "OPU", "OT", "Anaesthetist", "Sedation", "Embryologist", "vitrification", "storage"],
   },
 
   {
-    id: "PKG-CRYO-ADD",
-    name: "Additional cryolock",
+    id: "PKG-EMBRYO-CRYO",
+    name: "Embryo Cryostorage",
     category: "Cryostorage / Oocyte / Sperm Cryopreservation",
-    fullPaymentAmount: 5000,
-    description: "Additional cryolock for vitrification storage.",
-    staffNote: "Charged per additional lock required.",
-    billingNote: "Additional cryolock for vitrification storage.",
+    fullPaymentAmount: 0,
+    description: "First year embryo storage. 1 cryolock included in all ICSI packages.",
+    staffNote: "Embryo storage. First year is included in ICSI packages.",
+    billingNote: "First year embryo storage included in ICSI.",
     inclusionsList: [
-      "Additional cryolock structure & liquid nitrogen vitrification"
+      "First year embryo storage",
+      "1 cryolock included in all ICSI packages"
     ],
     exclusionsList: [
-      "Annual storage renewal fees"
+      "Annual renewal after first year (₹5,000 per cryolock per year)",
+      "Additional cryolock (₹5,000 per cryolock per year)"
+    ],
+    policiesList: [
+      "Renewal invoices sent 30 days before due date",
+      "60-day grace period before disposition protocol",
+      "Maximum embryo storage: 5 years (extendable on written request)",
+      "Maximum oocyte storage: 10 years (extendable on written request)",
+      "Patient instructions required for transfer / donate / research / discard",
+      "ART Act 2021 governs embryo disposition decisions",
+      "Storage tanks monitored 24×7 with alarms and backup systems",
+      "Annual storage certificate issued with cryolock count and renewal date"
     ],
     lineItems: [
-      { id: "PKG-CRYO-ADD-0", name: "Additional cryolock vitrification storage", price: 5000, category: "Storage", isOptional: false }
+      { id: "PKG-EMBRYO-CRYO-0", name: "First year embryo storage (included)", price: 0, category: "Storage", isOptional: false }
     ],
     duplicateBlockList: []
   },
 
   {
     id: "PKG-SPERM-3M",
-    name: "Sperm cryopreservation — first vial / 3 months",
+    name: "Sperm Cryopreservation — 3 months",
     category: "Cryostorage / Oocyte / Sperm Cryopreservation",
-    fullPaymentAmount: 5000,
-    description: "Sperm cryopreservation processing & storage for 3 months.",
-    staffNote: "Covers sperm wash, processing, freezing, and initial 3 months storage.",
-    billingNote: "Sperm cryopreservation first vial and 3 months storage.",
+    fullPaymentAmount: 3000,
+    description: "Processing + storage included for 3 months.",
+    staffNote: "3 months sperm storage.",
+    billingNote: "Sperm cryopreservation processing & storage for 3 months.",
     inclusionsList: [
-      "Sperm collection, processing & wash",
-      "Vial vitrification & liquid nitrogen preparation",
-      "3-month cryostorage facility"
+      "Processing + storage included"
     ],
     exclusionsList: [
-      "Semen analysis diagnostics",
-      "Storage extension beyond 3 months"
+      "Surgical sperm retrieval (TESA / PESA)",
+      "Donor sperm",
+      "Sperm transport to another clinic"
     ],
     lineItems: [
-      { id: "PKG-SPERM-3M-0", name: "Sperm wash & cryopreservation 3M", price: 5000, category: "Storage", isOptional: false }
+      { id: "PKG-SPERM-3M-0", name: "Sperm wash & cryopreservation 3M", price: 3000, category: "Storage", isOptional: false }
     ],
     duplicateBlockList: []
   },
 
   {
     id: "PKG-SPERM-6M",
-    name: "Sperm cryopreservation — 6 months",
+    name: "Sperm Cryopreservation — 6 months",
     category: "Cryostorage / Oocyte / Sperm Cryopreservation",
-    fullPaymentAmount: 10000,
-    description: "Sperm cryopreservation processing & storage for 6 months.",
-    staffNote: "Covers processing and storage for 6 months.",
-    billingNote: "Sperm cryopreservation and 6 months storage.",
+    fullPaymentAmount: 6000,
+    description: "Processing + storage included for 6 months.",
+    staffNote: "6 months sperm storage.",
+    billingNote: "Sperm cryopreservation processing & storage for 6 months.",
     inclusionsList: [
-      "Sperm processing & cryopreservation",
-      "6-month cryostorage facility"
+      "Processing + storage included"
     ],
     exclusionsList: [
-      "Storage extension beyond 6 months"
+      "Surgical sperm retrieval (TESA / PESA)",
+      "Donor sperm",
+      "Sperm transport to another clinic"
     ],
     lineItems: [
-      { id: "PKG-SPERM-6M-0", name: "Sperm wash & cryopreservation 6M", price: 10000, category: "Storage", isOptional: false }
+      { id: "PKG-SPERM-6M-0", name: "Sperm wash & cryopreservation 6M", price: 6000, category: "Storage", isOptional: false }
     ],
     duplicateBlockList: []
   },
 
   {
     id: "PKG-SPERM-1Y",
-    name: "Long-term sperm cryopreservation (1 year)",
+    name: "Sperm Cryopreservation — 1 year (annual)",
     category: "Cryostorage / Oocyte / Sperm Cryopreservation",
-    fullPaymentAmount: 20000,
-    description: "Sperm cryopreservation processing & storage for 1 year.",
-    staffNote: "Covers processing and storage for 1 year.",
-    billingNote: "Long-term sperm cryopreservation (1 year).",
+    fullPaymentAmount: 10000,
+    description: "Processing + storage included for 1 year.",
+    staffNote: "1 year sperm storage.",
+    billingNote: "Sperm cryopreservation processing & storage for 1 year.",
     inclusionsList: [
-      "Sperm processing & cryopreservation",
-      "1-year cryostorage facility"
+      "Processing + storage included"
     ],
     exclusionsList: [
-      "Storage extension beyond 1 year"
+      "Surgical sperm retrieval (TESA / PESA)",
+      "Donor sperm",
+      "Sperm transport to another clinic"
     ],
     lineItems: [
-      { id: "PKG-SPERM-1Y-0", name: "Sperm wash & cryopreservation 1Y", price: 20000, category: "Storage", isOptional: false }
+      { id: "PKG-SPERM-1Y-0", name: "Sperm wash & cryopreservation 1Y", price: 10000, category: "Storage", isOptional: false }
     ],
     duplicateBlockList: []
   },
@@ -1138,25 +1174,53 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     name: "ICSI Charity Package",
     category: "Charity Programme",
     fullPaymentAmount: 90000,
-    description: "Use only if clinician approved. Reduced package cost.",
+    description: "OPU + ICSI + Blastocyst Culture + 2 Cryolocks (1 Year) + Fresh ET\nAll monitoring during the ICSI cycle is FREE.",
     staffNote: "⚠ Use ONLY after written clinician approval. Reduced package rate. All standard ICSI inclusions apply. Monitoring consultations and follicular scans are complimentary.",
     billingNote: "Charity package: ICSI cycle, scans, OPU, ICSI procedure and embryo transfer.",
     inclusionsList: [
       "OPU (ovum pick-up) procedure",
-      "OT charges",
-      "Anaesthetist fee & sedation",
+      "OT charges / theatre fee",
+      "Anaesthetist fee + sedation / anaesthesia drugs",
       "Embryologist fee",
-      "Sperm wash & ICSI procedure",
-      "Embryo transfer",
-      "Complimentary scans & consultations"
+      "Sperm preparation for ICSI",
+      "ICSI procedure",
+      "Blastocyst culture (Day 5 – all fertilised embryos)",
+      "Vitrification + 1-year cryostorage (2 cryolocks included)",
+      "Fresh embryo transfer – 1 attempt (same cycle, if applicable)",
+      "Consumables + pap smear + administrative charges"
     ],
-    exclusionsList: [
-      "Stimulation medications",
-      "Investigations",
-      "Cryostorage renewal"
+    freeMonitoringList: [
+      "Monitoring consultation × 6 visits (Days 2, 5, 7, 9, 11, trigger day)",
+      "Follicular scan (TVS) × 6 (One scan during each monitoring visit)"
     ],
     lineItems: PKG_CHARITY_ITEMS,
     duplicateBlockList: ["Reduced", "monitoring", "follicular"],
+  },
+  {
+    id: "PKG-CHARITY-FET",
+    name: "FET Charity Package",
+    category: "Charity Programme",
+    fullPaymentAmount: 35000,
+    description: "Frozen Embryo Transfer\nAnaesthesia Included\nEmbryo Glue Included\nMonitoring FREE",
+    staffNote: "Charity FET package. Includes monitoring and embryo glue.",
+    billingNote: "Charity package: Frozen embryo transfer, including monitoring, anaesthesia and embryo glue.",
+    inclusionsList: [
+      "Embryo thaw (per cryolock / straw)",
+      "Embryologist fee",
+      "OT charges / theatre fee",
+      "Anaesthetist fee + anaesthesia drugs",
+      "Transfer catheter & consumables",
+      "Ultrasound guidance during transfer",
+      "Embryo glue (EG)"
+    ],
+    freeMonitoringList: [
+      "FET monitoring consultation × 2 visits",
+      "Endometrial scan (TVS) × 3 (Days 2, 8, 11)"
+    ],
+    lineItems: [
+      { id: "PKG-CHARITY-FET-0", name: "Charity FET Package Cost", price: 35000, category: "Procedure", isOptional: false }
+    ],
+    duplicateBlockList: ["thaw", "Embryologist", "OT charges", "Anaesthetist", "catheter", "guidance", "Embryo glue"],
   }
 ]
 
@@ -1178,10 +1242,10 @@ export const ADDON_MASTER: AddOnItem[] = [
 
   // Cryostorage separate items (also billable as add-ons)
   { id: "ADD-CRYO-RENEW",    name: "Annual cryolock renewal (per cryolock)",                 price: 5000,  category: "Storage",    status: "Active" },
-  { id: "ADD-SPERM-3M",      name: "Sperm cryopreservation – first vial / 3 months",         price: 5000,  category: "Storage",    status: "Active" },
-  { id: "ADD-SPERM-6M",      name: "Sperm cryopreservation – 6 months",                      price: 10000, category: "Storage",    status: "Active" },
-  { id: "ADD-SPERM-1Y",      name: "Long-term sperm cryopreservation – 1 year",              price: 20000, category: "Storage",    status: "Active" },
-  { id: "ADD-EMBRYO-STORAGE", name: "Embryo cryostorage – 2 cryolocks (included 1 yr in all ICSI packages)", price: 0, category: "Storage", status: "Active" },
+  { id: "ADD-SPERM-3M",      name: "Sperm cryopreservation – 3 months",                      price: 3000,  category: "Storage",    status: "Active" },
+  { id: "ADD-SPERM-6M",      name: "Sperm cryopreservation – 6 months",                      price: 6000,  category: "Storage",    status: "Active" },
+  { id: "ADD-SPERM-1Y",      name: "Long-term sperm cryopreservation – 1 year",              price: 10000, category: "Storage",    status: "Active" },
+  { id: "ADD-EMBRYO-STORAGE", name: "Embryo cryostorage – 1 cryolock (included 1 yr in all ICSI packages)", price: 0, category: "Storage", status: "Active" },
 ]
 
 // ═════════════════════════════════════════════════════════════════════════════

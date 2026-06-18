@@ -246,46 +246,81 @@ export function BillDetailPage() {
             </tbody>
           </table>
 
-          {/* Inclusions and Exclusions (for package bills) */}
-          {pkg && (
-            <div className="mt-6 border-t pt-4 space-y-4">
-              {/* Inclusions */}
-              {pkg.inclusionsList && pkg.inclusionsList.length > 0 && (
-                <div>
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">
-                    Package Inclusions (All Included)
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-750 dark:text-slate-300">
-                    {pkg.inclusionsList.map((inc, i) => (
-                      <div key={i} className="flex items-start gap-1.5">
-                        <span className="h-4 w-4 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-full flex items-center justify-center text-[9px] shrink-0 mt-0.5">
-                          ✓
-                        </span>
-                        <span>{inc}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+          {/* Inclusions & Exclusions — two-column balanced layout */}
+          {pkg && (pkg.inclusionsList?.length || pkg.freeMonitoringList?.length || bill.exclusions?.length) && (
+            <div className="mt-6 border-t pt-4">
+              <div className="grid grid-cols-2 gap-4">
 
-              {/* Custom Exclusions (rendered if bill has saved exclusions) */}
-              {bill.exclusions && bill.exclusions.length > 0 && (
-                <div className="border-t pt-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">
-                    Package Exclusions (Billed Separately)
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-slate-400">
-                    {bill.exclusions.map((excl, i) => (
-                      <div key={i} className="flex items-start gap-1.5 p-1.5 bg-slate-50/50 dark:bg-slate-900/10 border border-dashed rounded-lg">
-                        <span className="h-3.5 w-3.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex items-center justify-center text-[9px] shrink-0 font-bold mt-0.5">
-                          —
-                        </span>
-                        <span>{excl}</span>
-                      </div>
-                    ))}
-                  </div>
+                {/* LEFT: Inclusions and Free Monitoring */}
+                <div className="flex flex-col gap-4">
+                  {pkg.inclusionsList && pkg.inclusionsList.length > 0 && (
+                    <div className="border border-emerald-200 bg-emerald-50/30 dark:bg-emerald-950/10 p-3 rounded-xl">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-1">
+                        <span>✓</span> Inclusions (All Covered)
+                      </p>
+                      <ul className="list-none space-y-1">
+                        {pkg.inclusionsList.map((inc, i) => (
+                          <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-700 dark:text-slate-300">
+                            <span className="mt-0.5 shrink-0 h-3.5 w-3.5 bg-emerald-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold">✓</span>
+                            <span className="leading-snug">{inc}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {pkg.freeMonitoringList && pkg.freeMonitoringList.length > 0 && (
+                    <div className="border border-blue-200 bg-blue-50/30 dark:bg-blue-950/10 p-3 rounded-xl">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-1">
+                        <span>★</span> Free Monitoring
+                      </p>
+                      <ul className="list-none space-y-1">
+                        {pkg.freeMonitoringList.map((inc, i) => (
+                          <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-700 dark:text-slate-300">
+                            <span className="mt-0.5 shrink-0 h-3.5 w-3.5 bg-blue-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold">★</span>
+                            <span className="leading-snug">{inc}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {/* RIGHT: Exclusions and Policies */}
+                <div className="flex flex-col gap-4">
+                  {bill.exclusions && bill.exclusions.length > 0 && (
+                    <div className="border border-rose-200 bg-rose-50/30 dark:bg-rose-950/10 p-3 rounded-xl">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-rose-700 dark:text-rose-400 mb-2 flex items-center gap-1">
+                        <span>✕</span> Exclusions (Billed Separately)
+                      </p>
+                      <ul className="list-none space-y-1">
+                        {bill.exclusions.map((excl, i) => (
+                          <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+                            <span className="mt-0.5 shrink-0 h-3.5 w-3.5 bg-rose-400 text-white rounded-full flex items-center justify-center text-[8px] font-bold">✕</span>
+                            <span className="leading-snug">{excl}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {pkg?.policiesList && pkg.policiesList.length > 0 && (
+                    <div className="border border-slate-200 bg-slate-50/50 dark:bg-slate-900/50 p-3 rounded-xl">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1">
+                        <span>ℹ</span> Storage Policy
+                      </p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        {pkg.policiesList.map((pol, i) => (
+                          <li key={i} className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+                            {pol}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+              </div>
             </div>
           )}
 
@@ -321,7 +356,7 @@ export function BillDetailPage() {
             <p className="italic leading-normal">
               Consultation and monitoring scans included in OPU / egg collection packages and FET packages should not be billed separately. Room stay is optional unless specifically advised.
             </p>
-            {bill.exclusions && bill.exclusions.length > 0 && (
+            {bill.billingFormat === "detailed" && (
               <p className="mt-2 font-medium">
                 Note: Final bill may vary only when additional investigations, medications, room stay, or clinician-approved add-on is documented.
               </p>
@@ -357,11 +392,42 @@ export function BillDetailPage() {
 
       {/* Print styles */}
       <style>{`
+        @page {
+          size: A4 portrait;
+          margin: 6mm 8mm;
+        }
         @media print {
-          body { background: white !important; color: black !important; }
+          html, body {
+            width: 210mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            color: black !important;
+            overflow: visible !important;
+          }
           header, aside, .print\\:hidden, button { display: none !important; }
-          main { margin: 0 !important; padding: 0 !important; }
-          #printable-invoice { border: none !important; box-shadow: none !important; border-radius: 0 !important; max-width: 100% !important; }
+          main { margin: 0 !important; padding: 0 !important; max-width: 100% !important; width: 100% !important; }
+          .pl-64 { padding-left: 0 !important; }
+          .mt-16 { margin-top: 0 !important; }
+          #printable-invoice {
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            padding: 8px !important;
+            margin: 0 !important;
+            zoom: 0.72 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          #printable-invoice .mt-6 { margin-top: 8px !important; }
+          #printable-invoice .mt-8 { margin-top: 10px !important; }
+          #printable-invoice .space-y-6 > * + * { margin-top: 6px !important; }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
         }
       `}</style>
     </div>

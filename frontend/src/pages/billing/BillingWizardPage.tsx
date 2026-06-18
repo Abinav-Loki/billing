@@ -84,9 +84,7 @@ function getOtherItemsForPackage(pkgId: string, pkgCategory: string): OtherItem[
       { name: "Laser-assisted hatching (LAH)", price: 15000 },
       { name: "Additional cryolock", price: 5000 },
       { name: "Cryostorage renewal", price: 5000 },
-      { name: "FET", price: 35000 },
-      { name: "Single room", price: 5000, hasQty: true, qtyLabel: "days", unitText: "/day" },
-      { name: "ICSI Advanced + Room", price: 115000 }
+      { name: "FET", price: 35000 }
     ]
   }
   if (pkgId === "PKG-ICSI-PGT" || pkgId === "PKG-ROOM-ICSI-PGT") {
@@ -99,9 +97,7 @@ function getOtherItemsForPackage(pkgId: string, pkgCategory: string): OtherItem[
       { name: "Calcium ionophore", price: 10000 },
       { name: "Laser-assisted hatching (LAH)", price: 15000 },
       { name: "Stimulation medications", note: "As applicable", price: 0 },
-      { name: "Investigations", note: "As applicable", price: 0 },
-      { name: "Single room", price: 5000, hasQty: true, qtyLabel: "days", unitText: "/day" },
-      { name: "ICSI + PGT-A + Room", price: 225000 }
+      { name: "Investigations", note: "As applicable", price: 0 }
     ]
   }
   if (pkgId.startsWith("PKG-FET-")) {
@@ -115,12 +111,62 @@ function getOtherItemsForPackage(pkgId: string, pkgCategory: string): OtherItem[
       { name: "Laser-assisted hatching (LAH)", price: 15000 }
     ]
   }
-  if (pkgCategory === "Surgical / Procedure Packages") {
+  if (pkgId === "PKG-DIAG-LAP") {
     return [
-      { name: "Histopathology / tissue biopsy", price: 0 },
-      { name: "Overnight IP stay – room charges", price: 0 },
+      { name: "Histopathology / tissue biopsy", note: "As applicable", price: 0 },
+      { name: "Overnight IP stay – room charges", note: "As applicable", price: 0 },
       { name: "Operative intervention if findings require", note: "Additional charge", price: 0 }
     ]
+  }
+  if (pkgId === "PKG-DIAG-HYST") {
+    return [
+      { name: "Endometrial biopsy / polypectomy", note: "As applicable", price: 0 },
+      { name: "Histopathology", note: "As applicable", price: 0 }
+    ]
+  }
+  if (pkgId === "PKG-OP-HYST") {
+    return [
+      { name: "Histopathology of specimen", note: "As applicable", price: 0 },
+      { name: "Overnight IP stay", note: "As applicable", price: 0 }
+    ]
+  }
+  if (pkgId === "PKG-DNC") {
+    return [
+      { name: "Histopathology", note: "As applicable", price: 0 },
+      { name: "Overnight stay", note: "As applicable", price: 0 }
+    ]
+  }
+  if (pkgId === "PKG-CERCLAGE") {
+    return [
+      { name: "Post-op medications", note: "As applicable", price: 0 },
+      { name: "Overnight stay", note: "As applicable", price: 0 }
+    ]
+  }
+  if (pkgId === "PKG-CYST-ASP") {
+    return [
+      { name: "Histopathology / cyst fluid analysis", note: "As applicable", price: 0 },
+      { name: "Medications post-procedure", note: "As applicable", price: 0 }
+    ]
+  }
+  if (pkgId === "PKG-IUI-ANA") {
+    return [
+      { name: "Semen analysis pre-wash", note: "As applicable", price: 0 },
+      { name: "Follicular monitoring scans", note: "As applicable", price: 0 },
+      { name: "Medications", note: "As applicable", price: 0 }
+    ]
+  }
+  if (pkgId === "PKG-BARTHOLIN") {
+    return [
+      { name: "Histopathology", note: "As applicable", price: 0 },
+      { name: "Overnight IP stay", note: "As applicable", price: 0 },
+      { name: "Post-op antibiotics", note: "As applicable", price: 0 }
+    ]
+  }
+  if (pkgId === "PKG-PESA") {
+    return [] // No exclusions for PESA / TESA
+  }
+  if (pkgCategory === "Surgical / Procedure Packages") {
+    return []
   }
   if (pkgId === "PKG-DONOR-EGG") {
     return [
@@ -132,6 +178,27 @@ function getOtherItemsForPackage(pkgId: string, pkgCategory: string): OtherItem[
       { name: "PGT-A", price: 25000, hasQty: true, qtyLabel: "embryos", unitText: "per embryo" },
       { name: "Laser-assisted hatching (LAH)", price: 15000 },
       { name: "Additional cryolock / renewal", price: 5000 }
+    ]
+  }
+  if (pkgId === "PKG-CHARITY") {
+    return [
+      { name: "Stimulation medications", note: "At MRP", price: 0 },
+      { name: "Pre-cycle investigations\n(Hormones, Semen analysis, Serology)", note: "As applicable", price: 0 },
+      { name: "Additional cryolocks beyond 2", price: 5000, hasQty: true, qtyLabel: "locks", unitText: "per lock per year" },
+      { name: "Cryostorage renewal", price: 5000, hasQty: true, qtyLabel: "locks", unitText: "per lock per year" },
+      { name: "FET", price: 35000 },
+      { name: "PGT-A", price: 25000, hasQty: true, qtyLabel: "embryos", unitText: "per embryo" },
+      { name: "MF / PICSI", price: 10000 },
+      { name: "Calcium ionophore", price: 10000 }
+    ]
+  }
+  if (pkgId === "PKG-CHARITY-FET") {
+    return [
+      { name: "Luteal phase support medications", note: "At MRP", price: 0 },
+      { name: "Serum beta hCG (pregnancy test)", note: "As applicable", price: 0 },
+      { name: "Post-transfer follow-up scan", note: "As applicable", price: 0 },
+      { name: "Endometrial scratch", price: 3000 },
+      { name: "Second FET onwards", price: 35000 }
     ]
   }
   if (pkgId === "PKG-DONOR-EMBRYO") {
@@ -148,12 +215,16 @@ function getOtherItemsForPackage(pkgId: string, pkgCategory: string): OtherItem[
   }
   if (pkgId === "PKG-EGG-FRZ") {
     return [
-      { name: "Stimulation medications", note: "At drug package rate", price: 0 },
-      { name: "Pre-cycle hormonal blood tests\n(AMH, FSH, LH, E2, AFC workup)", price: 0 },
-      { name: "Serology panel\n(HIV, HBsAg, HCV, VDRL)", price: 0 },
-      { name: "ECG / Echo / anaesthetic checkup", note: "If required", price: 0 },
-      { name: "ICSI / fertilisation when oocytes used later", note: "At IVF package rate", price: 0 },
-      { name: "Annual oocyte storage renewal after Year 1", price: 20000 }
+      { name: "Stimulation medications", note: "At MRP", price: 0 },
+      { name: "Pre-cycle hormonal investigations\n(AMH, FSH, LH, E2, TSH, Prolactin)", note: "As applicable", price: 0 },
+      { name: "Additional blood investigations\n(CBC, Blood grouping, Blood sugar, RFT, Coagulation)", note: "As applicable", price: 0 },
+      { name: "Serology panel\n(HIV, HBsAg, HCV, VDRL)", note: "As applicable", price: 0 },
+      { name: "ECG", note: "As applicable", price: 0 },
+      { name: "Echocardiogram (Echo)", note: "As applicable", price: 0 },
+      { name: "Pre-anaesthetic check-up (PAC)", note: "As applicable", price: 0 },
+      { name: "Future utilisation of frozen oocytes", note: "At prevailing IVF/ICSI rate", price: 0 },
+      { name: "Additional cryostorage after first year", price: 20000, hasQty: true, qtyLabel: "years", unitText: "per year" },
+      { name: "Emergency thaw and refreeze", note: "As applicable", price: 0 }
     ]
   }
   if (pkgId === "PKG-2CYCLE" || pkgId === "PKG-3CYCLE") {
@@ -170,27 +241,31 @@ function getOtherItemsForPackage(pkgId: string, pkgCategory: string): OtherItem[
   if (pkgId === "PKG-CHARITY") {
     return [
       { name: "Stimulation medications", note: "At MRP", price: 0 },
-      { name: "Pre-cycle investigations\n(hormones, semen analysis, serology)", price: 0 },
-      { name: "Additional cryolocks beyond 2", price: 5000 },
-      { name: "Cryostorage renewal", price: 5000 },
+      { name: "Pre-cycle investigations\n(Hormones, Semen analysis, Serology)", note: "As applicable", price: 0 },
+      { name: "Additional cryolocks beyond 2", price: 5000, hasQty: true, qtyLabel: "locks", unitText: "per lock per year" },
+      { name: "Cryostorage renewal", price: 5000, hasQty: true, qtyLabel: "locks", unitText: "per lock per year" },
       { name: "FET", price: 35000 },
       { name: "PGT-A", price: 25000, hasQty: true, qtyLabel: "embryos", unitText: "per embryo" },
       { name: "MF / PICSI", price: 10000 },
       { name: "Calcium ionophore", price: 10000 }
     ]
   }
-  if (pkgCategory === "Cryostorage / Oocyte / Sperm Cryopreservation" || pkgId.startsWith("PKG-SPERM-") || pkgId === "PKG-CRYO-ADD") {
+  if (pkgId === "PKG-EMBRYO-CRYO") {
     return [
-      { name: "Additional cryolock", price: 5000 },
-      { name: "Annual renewal", price: 5000 },
-      { name: "Annual oocyte storage renewal", price: 20000 },
-      { name: "Sperm cryopreservation – processing + first vial", price: 3000 },
-      { name: "Additional sperm vial", price: 1500 },
-      { name: "Annual sperm storage per vial", price: 3000 },
-      { name: "Surgical sperm retrieval – TESA/PESA", note: "As applicable", price: 0 },
-      { name: "Donor sperm", note: "At actual cost", price: 0 },
-      { name: "Sperm transport to another clinic", note: "As applicable", price: 0 }
+      { name: "Annual renewal after first year", price: 5000, hasQty: true, qtyLabel: "locks", unitText: "per cryolock per year" },
+      { name: "Additional cryolock", price: 5000, hasQty: true, qtyLabel: "locks", unitText: "per cryolock per year" }
     ]
+  }
+  if (pkgId.startsWith("PKG-SPERM-")) {
+    return [
+      { name: "Surgical sperm retrieval (TESA / PESA)", note: "As applicable", price: 0 },
+      { name: "Donor sperm", note: "Actual cost", price: 0 },
+      { name: "Sperm transport to another clinic", note: "As applicable", price: 0 },
+      { name: "Renewal after Year 1", price: 10000, hasQty: true, qtyLabel: "years", unitText: "per year" }
+    ]
+  }
+  if (pkgCategory === "Cryostorage / Oocyte / Sperm Cryopreservation" || pkgId === "PKG-CRYO-ADD") {
+    return []
   }
   return []
 }
@@ -239,11 +314,13 @@ export function BillingWizardPage() {
   // State to track detailed exclusions/add-ons checked and their quantities
   const [detailedSelections, setDetailedSelections] = React.useState<Record<string, { checked: boolean, qty: number }>>({})
 
-  // Initialize exclusions and detailed selections when selected package changes
+  // Initialize detailed selections when selected package changes
+  // NOTE: Exclusions are NOT pre-loaded from the package defaults —
+  //        they only appear when manually added by the user in Step 2.
   React.useEffect(() => {
     if (selectedPackage) {
-      setExclusions(selectedPackage.exclusionsList || [])
-      
+      setExclusions([]) // Always start empty — user adds their own
+
       const items = getOtherItemsForPackage(selectedPackage.id, selectedPackage.category)
       const initial: Record<string, { checked: boolean, qty: number }> = {}
       items.forEach(item => {
@@ -410,6 +487,7 @@ export function BillingWizardPage() {
       doctorName: getDoctorName(),
       billingNotes: discountNote ? `Discount note: ${discountNote}` : undefined,
       billingMethod: "full_payment",
+      billingFormat: billingFormat,
       exclusions: generatedExclusions
     }
 
@@ -475,10 +553,36 @@ export function BillingWizardPage() {
       
       {/* ── Print styling tag ── */}
       <style>{`
+        @media screen {
+          .a4-invoice-sheet {
+            width: 100% !important;
+            max-width: 210mm !important;
+            min-height: 297mm !important;
+            background: white !important;
+            color: #1e293b !important;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 12px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            box-sizing: border-box !important;
+          }
+        }
+        @page {
+          size: A4 portrait;
+          margin: 6mm 8mm;
+        }
         @media print {
-          body {
+          html, body {
+            width: 210mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
             background: white !important;
             color: black !important;
+            overflow: visible !important;
           }
           aside, header, nav, button, .print-hide, .no-print {
             display: none !important;
@@ -499,10 +603,36 @@ export function BillingWizardPage() {
             border: none !important;
             box-shadow: none !important;
             border-radius: 0 !important;
-            max-width: 100% !important;
             width: 100% !important;
+            max-width: 100% !important;
             margin: 0 !important;
-            padding: 0 !important;
+            padding: 8px !important;
+            min-height: 0 !important;
+            zoom: 0.72 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          #printable-invoice-container .mt-6 {
+            margin-top: 8px !important;
+          }
+          #printable-invoice-container .mt-8 {
+            margin-top: 10px !important;
+          }
+          #printable-invoice-container .mt-12 {
+            margin-top: 14px !important;
+          }
+          #printable-invoice-container .p-8 {
+            padding: 6px !important;
+          }
+          #printable-invoice-container .space-y-6 > * + * {
+            margin-top: 6px !important;
+          }
+          #printable-invoice-container .gap-12 {
+            gap: 16px !important;
+          }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
         }
       `}</style>
@@ -1189,8 +1319,9 @@ export function BillingWizardPage() {
             {/* Hospital Invoice Sheet Container */}
             <div
               id="printable-invoice-container"
-              className="bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border rounded-2xl shadow-xl p-8 max-w-3xl mx-auto relative print:border-none print:shadow-none print:rounded-none"
+              className="a4-invoice-sheet p-8 relative print:p-0 print:border-none print:shadow-none print:rounded-none"
             >
+              <div className="flex-grow">
               {/* Letterhead Header */}
               <div className="flex justify-between items-start border-b pb-6">
                 <div className="space-y-1">
@@ -1314,24 +1445,81 @@ export function BillingWizardPage() {
                 </table>
               </div>
 
-              {/* Inclusions list */}
-              {billingFormat !== "detailed" && selectedPackage.inclusionsList && selectedPackage.inclusionsList.length > 0 && (
-                <div className="mt-6 border bg-slate-50/20 dark:bg-slate-900/10 p-4 rounded-xl">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">
-                    {billingFormat === "inline" ? "Inclusions Checklist" : "Package Inclusions (All Included)"}
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                    {selectedPackage.inclusionsList.map((inc, i) => (
-                      <div key={i} className="flex items-start gap-1.5 text-slate-700 dark:text-slate-350">
-                        <span className="h-4 w-4 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">
-                          ✓
-                        </span>
-                        <span>{inc}</span>
+              {/* Inclusions & Exclusions — two-column balanced layout */}
+              {(selectedPackage.inclusionsList?.length || selectedPackage.freeMonitoringList?.length || exclusions.length) ? (
+                <div className="mt-6 grid grid-cols-2 gap-4">
+
+                  {/* LEFT: Inclusions and Free Monitoring */}
+                  <div className="flex flex-col gap-4">
+                    {selectedPackage.inclusionsList && selectedPackage.inclusionsList.length > 0 && (
+                      <div className="border border-emerald-200 bg-emerald-50/30 p-3 rounded-xl">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 mb-2 flex items-center gap-1">
+                          <span>✓</span> Inclusions (All Covered)
+                        </p>
+                        <ul className="list-none space-y-1">
+                          {selectedPackage.inclusionsList.map((inc, i) => (
+                            <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-700">
+                              <span className="mt-0.5 shrink-0 h-3.5 w-3.5 bg-emerald-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold">✓</span>
+                              <span className="leading-snug">{inc}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                    ))}
+                    )}
+
+                    {selectedPackage.freeMonitoringList && selectedPackage.freeMonitoringList.length > 0 && (
+                      <div className="border border-blue-200 bg-blue-50/30 p-3 rounded-xl">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700 mb-2 flex items-center gap-1">
+                          <span>★</span> Free Monitoring
+                        </p>
+                        <ul className="list-none space-y-1">
+                          {selectedPackage.freeMonitoringList.map((inc, i) => (
+                            <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-700">
+                              <span className="mt-0.5 shrink-0 h-3.5 w-3.5 bg-blue-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold">★</span>
+                              <span className="leading-snug">{inc}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
+
+                  {/* RIGHT: Exclusions and Policies */}
+                  <div className="flex flex-col gap-4">
+                    {exclusions.length > 0 && (
+                      <div className="border border-rose-200 bg-rose-50/30 p-3 rounded-xl">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-rose-700 mb-2 flex items-center gap-1">
+                          <span>✕</span> Exclusions (Billed Separately)
+                        </p>
+                        <ul className="list-none space-y-1">
+                          {exclusions.map((excl, i) => (
+                            <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-600">
+                              <span className="mt-0.5 shrink-0 h-3.5 w-3.5 bg-rose-400 text-white rounded-full flex items-center justify-center text-[8px] font-bold">✕</span>
+                              <span className="leading-snug">{excl}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {selectedPackage.policiesList && selectedPackage.policiesList.length > 0 && (
+                      <div className="border border-slate-200 bg-slate-50/50 p-3 rounded-xl">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-1">
+                          <span>ℹ</span> Storage Policy
+                        </p>
+                        <ul className="list-disc pl-4 space-y-1">
+                          {selectedPackage.policiesList.map((pol, i) => (
+                            <li key={i} className="text-[11px] text-slate-600 leading-snug">
+                              {pol}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
                 </div>
-              )}
+              ) : null}
 
 
 
@@ -1376,26 +1564,28 @@ export function BillingWizardPage() {
               {/* Payment Status Line */}
               <div className="mt-4 flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b pb-4">
                 <span>Payment status:</span>
-                <span className="text-amber-600 dark:text-amber-400">Pending Reconciliation</span>
+                <span className="text-amber-600">Pending Reconciliation</span>
               </div>
 
-              {/* Signatures block */}
-              <div className="mt-12 grid grid-cols-2 gap-12 text-xs">
+              </div>{/* end flex-grow */}
+
+              {/* Signatures block — pinned to bottom */}
+              <div className="mt-8 grid grid-cols-2 gap-12 text-xs">
                 <div className="text-center space-y-6">
-                  <div className="h-6" />
-                  <div className="border-t border-dashed border-slate-300 dark:border-slate-700" />
+                  <div className="h-10" />
+                  <div className="border-t border-dashed border-slate-300" />
                   <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider">Patient / Guardian Signature</p>
                 </div>
                 <div className="text-center space-y-6">
-                  <div className="h-6" />
-                  <div className="border-t border-dashed border-slate-300 dark:border-slate-700" />
+                  <div className="h-10" />
+                  <div className="border-t border-dashed border-slate-300" />
                   <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider">Authorized Signatory / Reception Desk</p>
                 </div>
               </div>
 
               {/* Footer stamp */}
-              <div className="mt-8 border-t pt-3 text-center text-[9px] text-slate-400 font-medium leading-relaxed uppercase tracking-wider">
-                Computer Generated Invoice Slip · ASCAS Fertility & Women's Center · GST Road, Chennai
+              <div className="mt-4 border-t pt-2 text-center text-[9px] text-slate-400 font-medium leading-relaxed uppercase tracking-wider">
+                Computer Generated Invoice Slip · ASCAS Fertility &amp; Women's Center · GST Road, Chennai
               </div>
             </div>
           </div>
