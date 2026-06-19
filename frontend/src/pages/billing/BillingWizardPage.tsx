@@ -379,9 +379,8 @@ export function BillingWizardPage() {
     return sum
   }, 0)
 
-  const addOnsTotal = billingFormat === "detailed"
-    ? detailedItemsTotal
-    : selectedAddOns.reduce((sum, item) => sum + item.addon.price * item.qty, 0)
+  const addOnsTotal = (billingFormat === "detailed" ? detailedItemsTotal : 0) +
+    selectedAddOns.reduce((sum, item) => sum + item.addon.price * item.qty, 0)
 
   const subtotal = packageAmount + addOnsTotal
   const grandTotal = Math.max(0, subtotal - discount)
@@ -443,19 +442,25 @@ export function BillingWizardPage() {
     if (!selectedPackage) return
 
     const generatedAddOns = billingFormat === "detailed"
-      ? detailedItemsList
-          .filter(item => {
-            const sel = detailedSelections[item.name]
-            return sel && sel.checked
-          })
-          .map(item => {
-            const sel = detailedSelections[item.name]
-            const qtyText = sel.qty > 1 ? ` (x${sel.qty})` : ""
-            return {
-              name: item.name + qtyText,
-              price: (item.price || 0) * sel.qty
-            }
-          })
+      ? [
+          ...detailedItemsList
+            .filter(item => {
+              const sel = detailedSelections[item.name]
+              return sel && sel.checked
+            })
+            .map(item => {
+              const sel = detailedSelections[item.name]
+              const qtyText = sel.qty > 1 ? ` (x${sel.qty})` : ""
+              return {
+                name: item.name + qtyText,
+                price: (item.price || 0) * sel.qty
+              }
+            }),
+          ...selectedAddOns.map(item => ({
+            name: item.qty > 1 ? `${item.addon.name} (x${item.qty})` : item.addon.name,
+            price: item.addon.price * item.qty
+          }))
+        ]
       : selectedAddOns.map(item => ({
           name: item.qty > 1 ? `${item.addon.name} (x${item.qty})` : item.addon.name,
           price: item.addon.price * item.qty
@@ -1070,27 +1075,7 @@ export function BillingWizardPage() {
                   )}
                 </div>
 
-                {/* Selected Add-ons */}
-                {selectedAddOns.length > 0 && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Selected Add-ons</label>
-                    <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
-                      {selectedAddOns.map(item => (
-                        <div key={item.addon.id} className="flex justify-between items-center text-xs border bg-white dark:bg-slate-900 p-2.5 rounded-lg">
-                          <div className="min-w-0 pr-2">
-                            <p className="font-bold text-slate-700 dark:text-slate-200 truncate">{item.addon.name}</p>
-                            <p className="text-[10px] text-muted-foreground font-semibold">
-                              {formatCurrency(item.addon.price)} x {item.qty}
-                            </p>
-                          </div>
-                          <span className="font-bold text-slate-750 dark:text-slate-200 shrink-0">
-                            {formatCurrency(item.addon.price * item.qty)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Selected Add-ons removed from sidebar as per request */}
 
                 {/* Discount Inputs */}
                 <div className="border-t pt-4 space-y-3">
@@ -1325,11 +1310,13 @@ export function BillingWizardPage() {
               {/* Letterhead Header */}
               <div className="flex justify-between items-start border-b pb-6">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-6 w-6 text-primary" />
-                    <h2 className="text-xl font-extrabold text-slate-850 dark:text-slate-100 tracking-tight">
-                      ASCAS FERTILITY & WOMEN'S CENTER
-                    </h2>
+                  <div className="flex items-center gap-2.5">
+                    <img src="/logo.jpeg" alt="ASCAS Logo" className="h-12 w-12 object-contain" />
+                    <div className="flex flex-col">
+                      <h2 className="text-xl font-extrabold text-slate-850 dark:text-slate-100 tracking-tight leading-none">
+                        ASCAS FERTILITY & WOMEN'S CENTER
+                      </h2>
+                    </div>
                   </div>
                   <p className="text-[11px] text-slate-500 italic font-medium leading-none">
                     Doctor-led. Structured systems. Personal touch.
@@ -1404,7 +1391,7 @@ export function BillingWizardPage() {
                     </tr>
 
                     {/* Add-ons / Exclusions rows */}
-                    {billingFormat === "detailed" ? (
+                    {billingFormat === "detailed" && (
                       detailedItemsList
                         .filter(item => {
                           const sel = detailedSelections[item.name]
@@ -1413,7 +1400,7 @@ export function BillingWizardPage() {
                         .map((item, idx) => {
                           const sel = detailedSelections[item.name]
                           return (
-                            <tr key={idx}>
+                            <tr key={`det-${idx}`}>
                               <td className="py-3 pr-4">
                                 <p className="font-bold text-slate-750 dark:text-slate-200">
                                   {item.name.split("\n").join(" ")}
@@ -1427,20 +1414,20 @@ export function BillingWizardPage() {
                             </tr>
                           )
                         })
-                    ) : (
-                      selectedAddOns.map(item => (
-                        <tr key={item.addon.id}>
-                          <td className="py-3 pr-4">
-                            <p className="font-bold text-slate-750 dark:text-slate-200">{item.addon.name}</p>
-                            <p className="text-[10px] text-muted-foreground">{item.addon.category} Add-on</p>
-                          </td>
-                          <td className="py-3 text-center font-bold">{item.qty}</td>
-                          <td className="py-3 text-right font-bold text-slate-750 dark:text-slate-200">
-                            {formatCurrency(item.addon.price * item.qty)}
-                          </td>
-                        </tr>
-                      ))
                     )}
+                    
+                    {selectedAddOns.map(item => (
+                      <tr key={item.addon.id}>
+                        <td className="py-3 pr-4">
+                          <p className="font-bold text-slate-750 dark:text-slate-200">{item.addon.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{item.addon.category} Add-on</p>
+                        </td>
+                        <td className="py-3 text-center font-bold">{item.qty}</td>
+                        <td className="py-3 text-right font-bold text-slate-750 dark:text-slate-200">
+                          {formatCurrency(item.addon.price * item.qty)}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

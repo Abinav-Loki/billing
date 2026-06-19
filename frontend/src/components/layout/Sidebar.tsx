@@ -23,7 +23,6 @@ export function Sidebar() {
     { name: "New Bill", to: "/billing/new", icon: PlusCircle },
     { name: "Bills", to: "/bills", icon: FileText },
     { name: "Packages", to: "/packages", icon: Boxes },
-    { name: "Add-ons", to: "/addons", icon: Sparkles },
     { name: "Reports", to: "/reports", icon: BarChart3 },
     ...(user?.role === "Admin"
       ? [{ name: "Users", to: "/users", icon: UserCog }]
@@ -35,8 +34,8 @@ export function Sidebar() {
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen fixed left-0 top-0 border-r border-slate-800 z-30">
       {/* Header / Logo */}
       <div className="p-6 border-b border-slate-800 flex items-center gap-3">
-        <div className="bg-primary/20 p-2 rounded-lg text-primary">
-          <Heart className="h-6 w-6 stroke-[2.5]" />
+        <div className="h-10 w-10 shrink-0 bg-white rounded-full overflow-hidden flex items-center justify-center p-0.5">
+          <img src="/logo.jpeg" alt="ASCAS Logo" className="h-full w-full object-contain rounded-full" />
         </div>
         <div>
           <h1 className="font-bold text-white text-lg tracking-tight leading-none">ASCAS</h1>

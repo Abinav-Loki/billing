@@ -40,19 +40,7 @@ export function Header() {
 
   return (
     <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md flex items-center justify-between px-6 fixed top-0 right-0 left-64 z-20 transition-colors duration-200">
-      {/* Search Bar */}
-      <div className="relative w-72">
-        <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
-          <Search className="h-4 w-4" />
-        </span>
-        <input
-          type="text"
-          placeholder="Search patient, UHID or bill number..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full h-9 pl-9 pr-4 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary text-sm transition-all text-slate-800 dark:text-slate-100"
-        />
-      </div>
+      {/* Search Bar Removed */}
 
       {/* Utilities */}
       <div className="flex items-center gap-5">
