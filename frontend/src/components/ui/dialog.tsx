@@ -30,13 +30,13 @@ export function Dialog({ isOpen, onClose, children, className }: DialogProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
+        className="fixed inset-0 bg-slate-950/60 backdrop-blur-md transition-opacity duration-300 animate-fade-in"
         onClick={onClose}
       />
       {/* Content */}
       <div 
         className={cn(
-          "relative z-50 w-full max-w-lg rounded-xl bg-card p-6 shadow-xl border border-slate-200/50 dark:border-slate-800/50 transition-all duration-300 animate-in-up",
+          "relative z-50 w-full max-w-lg rounded-xl glass-panel p-6 transition-all duration-300 animate-in-up",
           className
         )}
       >

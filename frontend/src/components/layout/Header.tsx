@@ -39,7 +39,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const unreadCount = notifications.filter(n => !n.read).length
 
   return (
-    <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md flex items-center justify-between px-4 md:px-6 fixed top-0 right-0 left-0 md:left-64 z-20 transition-colors duration-200">
+    <header className="h-16 border-b border-slate-200/40 dark:border-slate-800/40 bg-white/50 dark:bg-slate-950/50 backdrop-blur-xl flex items-center justify-between px-4 md:px-6 fixed top-0 right-0 left-0 md:left-64 z-20 transition-colors duration-200 shadow-[0_4px_30px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
       <div className="flex items-center gap-3">
         <button 
           onClick={onMenuClick}

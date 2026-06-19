@@ -8,15 +8,15 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-md",
+          "bg-primary/90 backdrop-blur-sm text-primary-foreground shadow-[0_0_15px_rgba(45,190,165,0.2)] hover:bg-primary hover:shadow-[0_0_20px_rgba(45,190,165,0.4)] hover:-translate-y-0.5",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+          "bg-destructive/90 backdrop-blur-sm text-destructive-foreground shadow-sm hover:bg-destructive hover:shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:-translate-y-0.5",
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+          "border border-input/40 bg-background/50 backdrop-blur-sm shadow-sm hover:bg-accent/80 hover:text-accent-foreground hover:border-accent hover:-translate-y-0.5",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-secondary/80 backdrop-blur-sm text-secondary-foreground shadow-sm hover:bg-secondary hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:-translate-y-0.5",
+        ghost: "hover:bg-accent/50 hover:text-accent-foreground transition-all",
+        link: "text-primary underline-offset-4 hover:underline hover:text-primary/80",
       },
       size: {
         default: "h-9 px-4 py-2",
