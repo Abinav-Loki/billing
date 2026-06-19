@@ -1,9 +1,9 @@
 import * as React from "react"
 import { useAuth } from "../../hooks/useAuth"
 import { mockNotifications, NotificationItem } from "../../lib/mockData"
-import { Bell, Search, Sun, Moon, Calendar, ChevronDown, User, ShieldAlert, LogOut, Check } from "lucide-react"
+import { Bell, Search, Sun, Moon, Calendar, ChevronDown, User, ShieldAlert, LogOut, Check, Menu } from "lucide-react"
 
-export function Header() {
+export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user, logout } = useAuth()
   const [dateTime, setDateTime] = React.useState(new Date())
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -39,8 +39,15 @@ export function Header() {
   const unreadCount = notifications.filter(n => !n.read).length
 
   return (
-    <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md flex items-center justify-between px-6 fixed top-0 right-0 left-64 z-20 transition-colors duration-200">
-      {/* Search Bar Removed */}
+    <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md flex items-center justify-between px-4 md:px-6 fixed top-0 right-0 left-0 md:left-64 z-20 transition-colors duration-200">
+      <div className="flex items-center gap-3">
+        <button 
+          onClick={onMenuClick}
+          className="md:hidden p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      </div>
 
       {/* Utilities */}
       <div className="flex items-center gap-5">
