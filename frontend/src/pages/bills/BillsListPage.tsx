@@ -110,11 +110,12 @@ export function BillsListPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Bill No.</TableHead>
+                <TableHead>Bill No.</TableHead>
                   <TableHead>Patient Name</TableHead>
                   <TableHead>Selected Package</TableHead>
                   <TableHead>Billing Date</TableHead>
                   <TableHead>Grand Total</TableHead>
+                  <TableHead>Paid / Balance</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -130,6 +131,14 @@ export function BillsListPage() {
                       <span>{formatDate(bill.date)}</span>
                     </TableCell>
                     <TableCell className="font-bold text-primary">{formatCurrency(bill.grandTotal)}</TableCell>
+                    <TableCell>
+                      <div className="space-y-0.5 text-xs">
+                        <div className="text-emerald-600 font-bold">{formatCurrency(bill.amountPaid ?? 0)} <span className="text-slate-400 font-normal">paid</span></div>
+                        {(bill.paymentBalance ?? bill.grandTotal) > 0 && (
+                          <div className="text-amber-600 font-semibold">{formatCurrency(bill.paymentBalance ?? bill.grandTotal)} <span className="text-slate-400 font-normal">due</span></div>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge
                         variant={

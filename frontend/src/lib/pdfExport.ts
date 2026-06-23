@@ -262,7 +262,7 @@ export function generateBillPDF(bill: Bill) {
   doc.text("GRAND TOTAL:", totalsX, totalsY)
   doc.text(formatINR(bill.grandTotal), pageWidth - 15, totalsY, { align: "right" })
 
-  // ── 6. BILLING NOTES ──────────────────────────────────────────────
+  // ── 6. BILLING NOTES & DISCOUNT DETAILS ──────────────────────────
   let notesY = finalTableY + 2
   if (bill.billingNotes) {
     doc.setFont("Helvetica", "bold")
@@ -276,7 +276,6 @@ export function generateBillPDF(bill: Bill) {
     
     // Auto-wrap text inside box
     const splitNotes = doc.splitTextToSize(bill.billingNotes, totalsX - 25)
-    doc.text(splitNotes, 15, notesY + 4)
     
     // Draw left border/accent bar
     const notesHeight = splitNotes.length * 3.5 + 4
@@ -288,6 +287,32 @@ export function generateBillPDF(bill: Bill) {
     
     doc.setTextColor(51, 65, 85)
     doc.text(splitNotes, 17, notesY + 5)
+    
+    notesY += notesHeight + 6
+  }
+
+  if (bill.discountDetails?.applied) {
+    doc.setFont("Helvetica", "bold")
+    doc.setFontSize(8)
+    doc.setTextColor(16, 124, 65)
+    doc.text("DISCOUNT AUTHORIZATION DETAILS:", 15, notesY)
+    
+    doc.setFont("Helvetica", "normal")
+    doc.setFontSize(7.5)
+    doc.setTextColor(51, 65, 85)
+    
+    const discInfo = `Authorized By: ${bill.discountDetails.authorizedBy}  |  Reason: ${bill.discountDetails.reason}\nRemarks: ${bill.discountDetails.authorizationRemarks}`
+    const splitDisc = doc.splitTextToSize(discInfo, totalsX - 25)
+    
+    const discHeight = splitDisc.length * 3.5 + 4
+    doc.setFillColor(240, 253, 244) // Light emerald background
+    doc.rect(14, notesY + 1.5, totalsX - 23, discHeight, "F")
+    doc.setDrawColor(16, 124, 65)
+    doc.setLineWidth(0.6)
+    doc.line(14, notesY + 1.5, 14, notesY + 1.5 + discHeight)
+    
+    doc.setTextColor(21, 128, 61)
+    doc.text(splitDisc, 17, notesY + 5)
   }
 
   // ── 7. SIGNATURES & FOOTER ────────────────────────────────────────

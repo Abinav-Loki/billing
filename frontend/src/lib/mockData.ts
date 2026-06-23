@@ -30,6 +30,83 @@ export interface AddOn {
   status: "Active" | "Inactive"
 }
 
+export type PaymentMethod =
+  | "Cash"
+  | "Card"
+  | "UPI"
+  | "Credit Card"
+  | "Debit Card"
+  | "Net Banking"
+  | "Cheque"
+  | "Bank Transfer"
+  | "Insurance"
+
+export type PaymentType =
+  | "Full Payment"
+  | "Advance / Partial"
+  | "Final Settlement"
+
+export interface PaymentEntry {
+  id?: string              // PYMT-{billNo}-{n}
+  receiptNo?: string       // RCPT-{year}-{seq}
+  paymentType?: PaymentType
+  method: PaymentMethod
+  amount: number
+  date: string            // ISO date YYYY-MM-DD
+  time?: string            // HH:MM 24-hr
+  // Method-specific reference fields
+  transactionRef?: string // UPI UTR / bank ref / cheque no / net-banking ref
+  bankName?: string       // Card / Net Banking / Cheque / Bank Transfer
+  last4Digits?: string    // Credit/Debit card last 4 digits
+  chequeDate?: string     // Cheque only
+  // Common
+  receivedBy?: string
+  remarks?: string
+  // Audit trail
+  createdBy?: string
+  createdAt?: string
+
+  // Backwards compatibility
+  transactionId?: string
+  note?: string
+}
+
+export interface DiscountDetails {
+  applied: boolean
+  discountType?: "Percentage" | "Fixed"
+  discountValue?: number
+  reason?: string
+  authorizedBy?: string
+  authorizationRemarks?: string
+  authorizedAt?: string
+  appliedBy?: string
+  appliedAt?: string
+}
+
+export interface RefundEntry {
+  id: string
+  refundReceiptNo: string
+  amount: number
+  reason: string
+  method: "Cash" | "UPI" | "Bank Transfer" | "Card Reversal"
+  originalPaymentRef: string
+  authorizedBy: string
+  remarks?: string
+  refundedAt: string
+  processedBy: string
+}
+
+export interface AuditLogEntry {
+  id: string
+  actionType: "Discount" | "Refund"
+  createdBy: string
+  createdAt: string
+  updatedBy?: string
+  updatedAt?: string
+  authorizedBy: string
+  authorizationRemarks: string
+}
+
 export interface Bill {
   billNo: string
   uhid: string
@@ -52,6 +129,13 @@ export interface Bill {
   categoryName?: string
   exclusions?: string[]
   billingFormat?: "inline" | "detailed"
+  // Payment tracking
+  payments?: PaymentEntry[]
+  amountPaid?: number
+  paymentBalance?: number
+  discountDetails?: DiscountDetails
+  refunds?: RefundEntry[]
+  auditLogs?: AuditLogEntry[]
 }
 
 export interface User {
@@ -229,6 +313,39 @@ export const mockBills: Bill[] = [
     roomNo: "Day Care Bed 01",
     billingMethod: "full_payment",
     categoryName: "IVF / ICSI / FET",
+    amountPaid: 110000,
+    paymentBalance: 0,
+    payments: [
+      {
+        id: "PYMT-BILL-2026-0001-1",
+        receiptNo: "RCPT-2026-0001",
+        paymentType: "Advance / Partial",
+        method: "Debit Card",
+        amount: 60000,
+        date: "2026-06-01",
+        time: "10:30",
+        last4Digits: "4521",
+        bankName: "HDFC Bank",
+        receivedBy: "Reconciliation Desk",
+        remarks: "First installment via debit card",
+        createdBy: "Reconciliation Desk",
+        createdAt: "2026-06-01T10:30:00.000Z",
+      },
+      {
+        id: "PYMT-BILL-2026-0001-2",
+        receiptNo: "RCPT-2026-0002",
+        paymentType: "Final Settlement",
+        method: "UPI",
+        amount: 50000,
+        date: "2026-06-02",
+        time: "14:15",
+        transactionRef: "TXN-2026-0002-GPY",
+        receivedBy: "Reconciliation Desk",
+        remarks: "Balance cleared via UPI",
+        createdBy: "Reconciliation Desk",
+        createdAt: "2026-06-02T14:15:00.000Z",
+      },
+    ],
     selectedLineItems: [
       { id: "icsi-basic-01", name: "OPU (ovum pick-up) procedure", price: 12000, category: "Procedure", qty: 1 },
       { id: "icsi-basic-02", name: "OT charges / theatre fee", price: 10000, category: "OT", qty: 1 },
@@ -238,8 +355,8 @@ export const mockBills: Bill[] = [
       { id: "icsi-basic-06", name: "ICSI procedure", price: 15000, category: "Procedure", qty: 1 },
       { id: "icsi-basic-07", name: "Blastocyst culture (Day 5 — all fertilised embryos)", price: 10000, category: "Lab", qty: 1 },
       { id: "icsi-basic-08", name: "Vitrification + 1-year cryostorage (2 cryolocks included)", price: 12000, category: "Lab", qty: 1 },
-      { id: "icsi-basic-09", name: "Fresh embryo transfer — 1 attempt (same cycle, if applicable)", price: 8000, category: "Procedure", qty: 1 }
-    ]
+      { id: "icsi-basic-09", name: "Fresh embryo transfer — 1 attempt (same cycle, if applicable)", price: 8000, category: "Procedure", qty: 1 },
+    ],
   },
   {
     billNo: "BILL-2026-0002",
@@ -249,7 +366,7 @@ export const mockBills: Bill[] = [
     packagePrice: 300000,
     addOns: [
       { name: "Laser-assisted hatching (LAH) — standard rate", price: 15000 },
-      { name: "Calcium ionophore", price: 10000 }
+      { name: "Calcium ionophore", price: 10000 },
     ],
     roomCharges: 25000,
     additionalCharges: 10000,
@@ -261,7 +378,10 @@ export const mockBills: Bill[] = [
     doctorName: "Dr. Anjali Mehta (IVF Specialist)",
     roomNo: "Room 305 (Single Room)",
     billingMethod: "full_payment",
-    categoryName: "Donor Programmes"
+    categoryName: "Donor Programmes",
+    amountPaid: 0,
+    paymentBalance: 330000,
+    payments: [],
   },
   {
     billNo: "BILL-2026-0003",
@@ -280,7 +400,26 @@ export const mockBills: Bill[] = [
     doctorName: "Dr. S. K. Sen (Senior Embryologist)",
     roomNo: "Room 102 (Single Room)",
     billingMethod: "full_payment",
-    categoryName: "IVF / ICSI / FET"
+    categoryName: "IVF / ICSI / FET",
+    amountPaid: 122000,
+    paymentBalance: 0,
+    payments: [
+      {
+        id: "PYMT-BILL-2026-0003-1",
+        receiptNo: "RCPT-2026-0003",
+        paymentType: "Full Payment",
+        method: "Bank Transfer",
+        amount: 122000,
+        date: "2026-06-05",
+        time: "11:00",
+        transactionRef: "NEFT2026060512345",
+        bankName: "SBI",
+        receivedBy: "Staff Receptionist B",
+        remarks: "Full payment via NEFT",
+        createdBy: "Staff Receptionist B",
+        createdAt: "2026-06-05T11:00:00.000Z",
+      },
+    ],
   },
   {
     billNo: "BILL-2026-0004",
@@ -300,12 +439,29 @@ export const mockBills: Bill[] = [
     roomNo: "Day Care Bed 03",
     billingMethod: "item_wise",
     categoryName: "IVF / ICSI / FET",
+    amountPaid: 21000,
+    paymentBalance: 0,
+    payments: [
+      {
+        id: "PYMT-BILL-2026-0004-1",
+        receiptNo: "RCPT-2026-0004",
+        paymentType: "Full Payment",
+        method: "Cash",
+        amount: 21000,
+        date: "2026-06-08",
+        time: "09:45",
+        receivedBy: "Reconciliation Desk",
+        remarks: "Full cash payment at reception",
+        createdBy: "Reconciliation Desk",
+        createdAt: "2026-06-08T09:45:00.000Z",
+      },
+    ],
     selectedLineItems: [
       { id: "fet-noana-01", name: "Embryo thaw (per cryolock / straw)", price: 5000, category: "Lab", qty: 1 },
       { id: "fet-noana-02", name: "Embryologist fee", price: 6000, category: "Professional", qty: 1 },
       { id: "fet-noana-03", name: "OT / procedure room charges", price: 5000, category: "OT", qty: 1 },
-      { id: "fet-noana-04", name: "Transfer catheter & consumables", price: 4000, category: "Consumables", qty: 1 }
-    ]
+      { id: "fet-noana-04", name: "Transfer catheter & consumables", price: 4000, category: "Consumables", qty: 1 },
+    ],
   },
   {
     billNo: "BILL-2026-0005",
@@ -324,7 +480,25 @@ export const mockBills: Bill[] = [
     doctorName: "Dr. Anjali Mehta (IVF Specialist)",
     roomNo: "Room 104 (Single Room)",
     billingMethod: "full_payment",
-    categoryName: "Surgical / Procedure Packages"
+    categoryName: "Surgical / Procedure Packages",
+    amountPaid: 48000,
+    paymentBalance: 0,
+    payments: [
+      {
+        id: "PYMT-BILL-2026-0005-1",
+        receiptNo: "RCPT-2026-0005",
+        paymentType: "Full Payment",
+        method: "UPI",
+        amount: 48000,
+        date: "2026-06-10",
+        time: "13:20",
+        transactionRef: "623718293847",
+        receivedBy: "Staff Receptionist B",
+        remarks: "Full payment via PhonePe",
+        createdBy: "Staff Receptionist B",
+        createdAt: "2026-06-10T13:20:00.000Z",
+      },
+    ],
   },
   {
     billNo: "BILL-2026-0006",
@@ -343,7 +517,23 @@ export const mockBills: Bill[] = [
     doctorName: "Dr. Anjali Mehta (IVF Specialist)",
     roomNo: "Lab Bed",
     billingMethod: "full_payment",
-    categoryName: "Cryostorage / Oocyte / Sperm Cryopreservation"
+    categoryName: "Cryostorage / Oocyte / Sperm Cryopreservation",
+    amountPaid: 3000,
+    paymentBalance: 0,
+    payments: [
+      {
+        id: "PYMT-BILL-2026-0006-1",
+        receiptNo: "RCPT-2026-0006",
+        paymentType: "Full Payment",
+        method: "Cash",
+        amount: 3000,
+        date: "2026-06-12",
+        time: "10:05",
+        receivedBy: "Reconciliation Desk",
+        createdBy: "Reconciliation Desk",
+        createdAt: "2026-06-12T10:05:00.000Z",
+      },
+    ],
   },
   {
     billNo: "BILL-2026-0007",
@@ -362,7 +552,26 @@ export const mockBills: Bill[] = [
     doctorName: "Dr. S. K. Sen (Senior Embryologist)",
     roomNo: "Day Care 04",
     billingMethod: "full_payment",
-    categoryName: "Surgical / Procedure Packages"
+    categoryName: "Surgical / Procedure Packages",
+    amountPaid: 25000,
+    paymentBalance: 0,
+    payments: [
+      {
+        id: "PYMT-BILL-2026-0007-1",
+        receiptNo: "RCPT-2026-0007",
+        paymentType: "Full Payment",
+        method: "Credit Card",
+        amount: 25000,
+        date: "2026-06-12",
+        time: "15:30",
+        last4Digits: "7823",
+        bankName: "ICICI Bank",
+        receivedBy: "Staff Receptionist B",
+        remarks: "Paid by credit card",
+        createdBy: "Staff Receptionist B",
+        createdAt: "2026-06-12T15:30:00.000Z",
+      },
+    ],
   },
   {
     billNo: "BILL-2026-0008",
@@ -381,7 +590,38 @@ export const mockBills: Bill[] = [
     doctorName: "Dr. Anjali Mehta (IVF Specialist)",
     roomNo: "Room 105 (Single Room)",
     billingMethod: "full_payment",
-    categoryName: "IVF / ICSI / FET"
+    categoryName: "IVF / ICSI / FET",
+    amountPaid: 88000,
+    paymentBalance: 0,
+    payments: [
+      {
+        id: "PYMT-BILL-2026-0008-1",
+        receiptNo: "RCPT-2026-0008",
+        paymentType: "Advance / Partial",
+        method: "UPI",
+        amount: 50000,
+        date: "2026-06-14",
+        time: "09:00",
+        transactionRef: "GPAY2026061450000",
+        receivedBy: "Reconciliation Desk",
+        remarks: "Advance via Google Pay",
+        createdBy: "Reconciliation Desk",
+        createdAt: "2026-06-14T09:00:00.000Z",
+      },
+      {
+        id: "PYMT-BILL-2026-0008-2",
+        receiptNo: "RCPT-2026-0009",
+        paymentType: "Final Settlement",
+        method: "Cash",
+        amount: 38000,
+        date: "2026-06-15",
+        time: "17:45",
+        receivedBy: "Staff Receptionist B",
+        remarks: "Balance paid at discharge",
+        createdBy: "Staff Receptionist B",
+        createdAt: "2026-06-15T17:45:00.000Z",
+      },
+    ],
   },
   {
     billNo: "BILL-2026-0009",
@@ -391,7 +631,7 @@ export const mockBills: Bill[] = [
     packagePrice: 300000,
     addOns: [
       { name: "Calcium ionophore", price: 10000 },
-      { name: "Laser-assisted hatching (LAH) — standard rate", price: 15000 }
+      { name: "Laser-assisted hatching (LAH) — standard rate", price: 15000 },
     ],
     roomCharges: 15000,
     additionalCharges: 10000,
@@ -399,11 +639,30 @@ export const mockBills: Bill[] = [
     taxAmount: 0,
     grandTotal: 315000,
     date: "2026-06-15",
-    status: "Pending",
+    status: "Partially Paid",
     doctorName: "Dr. Priya Naidu (Gynecologist)",
     roomNo: "Room 106 (Single Room)",
     billingMethod: "full_payment",
-    categoryName: "Embryo Pooling / Oocyte Accumulation"
+    categoryName: "Embryo Pooling / Oocyte Accumulation",
+    amountPaid: 100000,
+    paymentBalance: 215000,
+    payments: [
+      {
+        id: "PYMT-BILL-2026-0009-1",
+        receiptNo: "RCPT-2026-0010",
+        paymentType: "Advance / Partial",
+        method: "Bank Transfer",
+        amount: 100000,
+        date: "2026-06-15",
+        time: "11:30",
+        transactionRef: "RTGS2026061510000",
+        bankName: "Axis Bank",
+        receivedBy: "Reconciliation Desk",
+        remarks: "Initial advance via RTGS",
+        createdBy: "Reconciliation Desk",
+        createdAt: "2026-06-15T11:30:00.000Z",
+      },
+    ],
   },
   {
     billNo: "BILL-2026-0010",
@@ -422,8 +681,27 @@ export const mockBills: Bill[] = [
     doctorName: "Dr. Anjali Mehta (IVF Specialist)",
     roomNo: "Room 108 (Single Room)",
     billingMethod: "full_payment",
-    categoryName: "IVF / ICSI / FET"
-  }
+    categoryName: "IVF / ICSI / FET",
+    amountPaid: 21000,
+    paymentBalance: 0,
+    payments: [
+      {
+        id: "PYMT-BILL-2026-0010-1",
+        receiptNo: "RCPT-2026-0011",
+        paymentType: "Full Payment",
+        method: "Debit Card",
+        amount: 21000,
+        date: "2026-06-16",
+        time: "12:00",
+        last4Digits: "9034",
+        bankName: "Kotak Bank",
+        receivedBy: "Staff Receptionist B",
+        remarks: "Full payment by debit card",
+        createdBy: "Staff Receptionist B",
+        createdAt: "2026-06-16T12:00:00.000Z",
+      },
+    ],
+  },
 ]
 
 export const mockUsers: User[] = [

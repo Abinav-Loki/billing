@@ -1,22 +1,32 @@
 import * as React from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Card, CardContent } from "../../components/ui/card"
 import { Badge } from "../../components/ui/badge"
 import { Button } from "../../components/ui/button"
 import { formatCurrency, formatDate } from "../../lib/utils"
-import { mockBills, Bill } from "../../lib/mockData"
+import { mockBills, Bill, PaymentEntry, DiscountDetails, RefundEntry, AuditLogEntry } from "../../lib/mockData"
 import { PACKAGE_MASTER } from "../../lib/billingMaster"
 import { generateBillPDF } from "../../lib/pdfExport"
+import { useAuth } from "../../hooks/useAuth"
+import { generatePaymentId, generateReceiptNo } from "../../lib/paymentUtils"
+
+// New components
+import { PaymentSummaryStrip } from "../../components/payment/PaymentSummaryStrip"
+import { PaymentEntryForm } from "../../components/payment/PaymentEntryForm"
+import { PaymentTimeline } from "../../components/payment/PaymentTimeline"
+import { PaymentReceiptModal } from "../../components/payment/PaymentReceiptModal"
+import { DiscountEditor } from "../../components/payment/DiscountEditor"
+import { RefundManager } from "../../components/payment/RefundManager"
+import { RefundTimeline } from "../../components/payment/RefundTimeline"
+import { AuditLogViewer } from "../../components/payment/AuditLogViewer"
+
 import {
   ArrowLeft,
   Printer,
-  RefreshCw,
   AlertCircle,
-  CheckCircle,
-  FileText,
   Building2,
   Download,
 } from "lucide-react"
+
 
 export function BillDetailPage() {
   const { billNo } = useParams<{ billNo: string }>()
@@ -26,7 +36,10 @@ export function BillDetailPage() {
     mockBills.find((b) => b.billNo === billNo)
   )
 
-  // Auto-print if ?print=true
+  const { user } = useAuth()
+  const [selectedReceipt, setSelectedReceipt] = React.useState<PaymentEntry | null>(null)
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = React.useState(false)
+
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get("print") === "true" && bill) {
@@ -48,20 +61,144 @@ export function BillDetailPage() {
     )
   }
 
-  const pkg = PACKAGE_MASTER.find((p) => p.name === bill.packageName)
-  const subtotal = bill.packagePrice + bill.addOns.reduce((s, a) => s + a.price, 0) + bill.roomCharges + bill.additionalCharges
+  const pkg      = PACKAGE_MASTER.find((p) => p.name === bill.packageName)
+  const payments     = bill.payments ?? []
+  const refunds      = bill.refunds ?? []
+  const totalRefunded = refunds.reduce((s, r) => s + r.amount, 0)
+  const totalPaid    = Math.max(0, payments.reduce((s, p) => s + p.amount, 0) - totalRefunded)
+  const balanceDue   = Math.max(0, bill.grandTotal - totalPaid)
+  const paidPercent  = bill.grandTotal > 0 ? Math.min(100, Math.round((totalPaid / bill.grandTotal) * 100)) : 0
+  const payStatus: Bill["status"] = totalPaid <= 0 ? "Pending" : balanceDue <= 0 ? "Paid" : "Partially Paid"
 
-  const toggleStatus = () => {
-    const next: "Paid" | "Pending" = bill.status === "Paid" ? "Pending" : "Paid"
-    const updated = { ...bill, status: next }
+  const persist = (updated: Bill) => {
     const idx = mockBills.findIndex((b) => b.billNo === billNo)
     if (idx !== -1) mockBills[idx] = updated
     setBill(updated)
   }
 
+  const handleSaveDiscount = (discountDetails: DiscountDetails, auditLog: AuditLogEntry) => {
+    const subtotal = bill.packagePrice + bill.addOns.reduce((s, a) => s + a.price, 0) + (bill.roomCharges || 0) + (bill.additionalCharges || 0)
+    let discountAmount = 0
+    if (discountDetails.applied && discountDetails.discountType && discountDetails.discountValue) {
+      if (discountDetails.discountType === "Percentage") {
+        discountAmount = Math.round((subtotal * discountDetails.discountValue) / 100)
+      } else {
+        discountAmount = discountDetails.discountValue
+      }
+    }
+
+    const updatedGrandTotal = Math.max(0, subtotal + (bill.taxAmount || 0) - discountAmount)
+    const currentPayments = bill.payments ?? []
+    const basePaid = currentPayments.reduce((sum, p) => sum + p.amount, 0)
+    const currentRefunded = (bill.refunds ?? []).reduce((sum, r) => sum + r.amount, 0)
+    const updatedPaid = Math.max(0, basePaid - currentRefunded)
+    const updatedBalance = Math.max(0, updatedGrandTotal - updatedPaid)
+    const updatedStatus: Bill["status"] =
+      updatedPaid <= 0 ? "Pending" : updatedBalance <= 0 ? "Paid" : "Partially Paid"
+
+    const updatedBill: Bill = {
+      ...bill,
+      discount: discountAmount,
+      grandTotal: updatedGrandTotal,
+      discountDetails,
+      amountPaid: updatedPaid,
+      paymentBalance: updatedBalance,
+      status: updatedStatus,
+      auditLogs: [...(bill.auditLogs ?? []), auditLog]
+    }
+
+    persist(updatedBill)
+  }
+
+  const handleRefundProcessed = (refund: RefundEntry, auditLog: AuditLogEntry) => {
+    const currentPayments = bill.payments ?? []
+    const currentRefunds = [...(bill.refunds ?? []), refund]
+    
+    const basePaid = currentPayments.reduce((sum, p) => sum + p.amount, 0)
+    const totalRefunded = currentRefunds.reduce((sum, r) => sum + r.amount, 0)
+    const updatedPaid = Math.max(0, basePaid - totalRefunded)
+    const updatedBalance = Math.max(0, bill.grandTotal - updatedPaid)
+    const updatedStatus: Bill["status"] =
+      updatedPaid <= 0 ? "Pending" : updatedBalance <= 0 ? "Paid" : "Partially Paid"
+
+    const updatedBill: Bill = {
+      ...bill,
+      refunds: currentRefunds,
+      amountPaid: updatedPaid,
+      paymentBalance: updatedBalance,
+      status: updatedStatus,
+      auditLogs: [...(bill.auditLogs ?? []), auditLog]
+    }
+
+    persist(updatedBill)
+  }
+
+  const handlePaymentsAdded = (
+    newPaymentsData: Omit<PaymentEntry, "id" | "receiptNo" | "createdAt" | "createdBy">[]
+  ) => {
+    const currentPayments = bill.payments ?? []
+    
+    const processedPayments: PaymentEntry[] = newPaymentsData.map((data, index) => {
+      const paymentId = generatePaymentId(bill.billNo, currentPayments.length + index)
+      const receiptNo = generateReceiptNo(mockBills)
+      const nowStr = new Date().toISOString()
+      
+      return {
+        ...data,
+        id: paymentId,
+        receiptNo,
+        createdBy: user?.name || "Billing Desk",
+        createdAt: nowStr
+      }
+    })
+
+    const updatedPayments = [...currentPayments, ...processedPayments]
+    const basePaid = updatedPayments.reduce((sum, p) => sum + p.amount, 0)
+    const currentRefunded = (bill.refunds ?? []).reduce((sum, r) => sum + r.amount, 0)
+    const updatedPaid = Math.max(0, basePaid - currentRefunded)
+    const updatedBalance = Math.max(0, bill.grandTotal - updatedPaid)
+    const updatedStatus: Bill["status"] =
+      updatedPaid <= 0 ? "Pending" : updatedBalance <= 0 ? "Paid" : "Partially Paid"
+
+    const updatedBill: Bill = {
+      ...bill,
+      payments: updatedPayments,
+      amountPaid: updatedPaid,
+      paymentBalance: updatedBalance,
+      status: updatedStatus
+    }
+
+    persist(updatedBill)
+
+    if (processedPayments.length > 0) {
+      setSelectedReceipt(processedPayments[0])
+      setIsReceiptModalOpen(true)
+    }
+  }
+
+  const handleDeletePayment = (paymentId: string) => {
+    const currentPayments = bill.payments ?? []
+    const updatedPayments = currentPayments.filter((p) => p.id !== paymentId)
+    const basePaid = updatedPayments.reduce((sum, p) => sum + p.amount, 0)
+    const currentRefunded = (bill.refunds ?? []).reduce((sum, r) => sum + r.amount, 0)
+    const updatedPaid = Math.max(0, basePaid - currentRefunded)
+    const updatedBalance = Math.max(0, bill.grandTotal - updatedPaid)
+    const updatedStatus: Bill["status"] =
+      updatedPaid <= 0 ? "Pending" : updatedBalance <= 0 ? "Paid" : "Partially Paid"
+
+    const updatedBill: Bill = {
+      ...bill,
+      payments: updatedPayments,
+      amountPaid: updatedPaid,
+      paymentBalance: updatedBalance,
+      status: updatedStatus
+    }
+
+    persist(updatedBill)
+  }
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Controls — hidden on print */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
         <div className="flex items-center gap-3">
           <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="h-9 w-9">
@@ -70,16 +207,14 @@ export function BillDetailPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold font-mono text-slate-800 dark:text-slate-100">{bill.billNo}</h1>
-              <Badge variant={bill.status === "Paid" ? "success" : "warning"}>{bill.status}</Badge>
+              <Badge variant={payStatus === "Paid" ? "success" : payStatus === "Partially Paid" ? "info" : "warning"}>
+                {payStatus}
+              </Badge>
             </div>
             <p className="text-xs text-muted-foreground">{bill.patientName} · {formatDate(bill.date)}</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={toggleStatus} className="gap-1.5 text-xs">
-            <RefreshCw className="h-3.5 w-3.5" />
-            Mark {bill.status === "Paid" ? "Pending" : "Paid"}
-          </Button>
           <Button variant="outline" size="sm" onClick={() => generateBillPDF(bill)} className="gap-1.5 text-xs text-teal-600 border-teal-200 hover:bg-teal-50 dark:hover:bg-teal-950/20">
             <Download className="h-3.5 w-3.5" /> Download PDF
           </Button>
@@ -89,12 +224,10 @@ export function BillDetailPage() {
         </div>
       </div>
 
-      {/* Invoice Sheet */}
       <div
         id="printable-invoice"
         className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-lg max-w-3xl mx-auto print:border-none print:shadow-none print:rounded-none"
       >
-        {/* Letterhead */}
         <div className="flex justify-between items-start p-8 border-b border-slate-100 dark:border-slate-800">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -114,20 +247,17 @@ export function BillDetailPage() {
             <p className="text-[11px] text-slate-500 font-mono mt-2">Bill No: {bill.billNo}</p>
             <p className="text-[11px] text-slate-500">Date: {formatDate(bill.date)}</p>
             <div className="mt-2">
-              <span
-                className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                  bill.status === "Paid"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-amber-100 text-amber-700"
-                }`}
-              >
-                {bill.status}
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                payStatus === "Paid" ? "bg-emerald-100 text-emerald-700" :
+                payStatus === "Partially Paid" ? "bg-sky-100 text-sky-700" :
+                "bg-amber-100 text-amber-700"
+              }`}>
+                {payStatus}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Patient & Doctor Info */}
         <div className="grid grid-cols-2 gap-6 p-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40">
           <div className="space-y-1 text-xs">
             <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">Billed To</p>
@@ -148,7 +278,6 @@ export function BillDetailPage() {
           </div>
         </div>
 
-        {/* Charges Table */}
         <div className="p-8 space-y-6">
           <table className="w-full text-xs">
             <thead>
@@ -160,7 +289,6 @@ export function BillDetailPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {/* Package / Procedure List */}
               {bill.billingMethod === "item_wise" && bill.selectedLineItems && bill.selectedLineItems.length > 0 ? (
                 bill.selectedLineItems.map((item, idx) => (
                   <tr key={item.id}>
@@ -179,46 +307,22 @@ export function BillDetailPage() {
                   <td className="py-3">
                     <p className="font-bold text-slate-800 dark:text-slate-100">{bill.packageName}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">Treatment Package — ASCAS (Full Payment)</p>
-                    {pkg && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {pkg.lineItems.slice(0, 4).map((item) => (
-                          <span key={item.id} className="text-[9px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-muted-foreground">
-                            {item.name}
-                          </span>
-                        ))}
-                        {pkg.lineItems.length > 4 && (
-                          <span className="text-[9px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-muted-foreground">
-                            +{pkg.lineItems.length - 4} more
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </td>
                   <td className="py-3 text-center">1</td>
                   <td className="py-3 text-right font-bold">{formatCurrency(bill.packagePrice)}</td>
                 </tr>
               )}
-
-              {/* Room charges */}
               {bill.roomCharges > 0 && (
                 <tr>
-                  <td className="py-3 text-muted-foreground">
-                    {bill.billingMethod === "item_wise" && bill.selectedLineItems ? bill.selectedLineItems.length + 1 : 2}
-                  </td>
-                  <td className="py-3">
-                    <p className="font-medium text-slate-700 dark:text-slate-200">Room / Ward Bed Charges</p>
-                  </td>
+                  <td className="py-3 text-muted-foreground">{bill.billingMethod === "item_wise" && bill.selectedLineItems ? bill.selectedLineItems.length + 1 : 2}</td>
+                  <td className="py-3"><p className="font-medium text-slate-700 dark:text-slate-200">Room / Ward Bed Charges</p></td>
                   <td className="py-3 text-center">1</td>
                   <td className="py-3 text-right">{formatCurrency(bill.roomCharges)}</td>
                 </tr>
               )}
-
-              {/* Add-ons */}
               {bill.addOns.map((addon, i) => {
-                const baseIdx = bill.billingMethod === "item_wise" && bill.selectedLineItems 
-                  ? bill.selectedLineItems.length + 1 
-                  : 2;
-                const offset = bill.roomCharges > 0 ? 1 : 0;
+                const baseIdx = bill.billingMethod === "item_wise" && bill.selectedLineItems ? bill.selectedLineItems.length + 1 : 2
+                const offset  = bill.roomCharges > 0 ? 1 : 0
                 return (
                   <tr key={i}>
                     <td className="py-3 text-muted-foreground">{i + baseIdx + offset}</td>
@@ -229,16 +333,12 @@ export function BillDetailPage() {
                     <td className="py-3 text-center">1</td>
                     <td className="py-3 text-right">{formatCurrency(addon.price)}</td>
                   </tr>
-                );
+                )
               })}
-
-              {/* Misc */}
               {bill.additionalCharges > 0 && (
                 <tr>
                   <td className="py-3 text-muted-foreground">—</td>
-                  <td className="py-3">
-                    <p className="font-medium text-slate-700 dark:text-slate-200">Miscellaneous Consumables</p>
-                  </td>
+                  <td className="py-3"><p className="font-medium text-slate-700 dark:text-slate-200">Miscellaneous Consumables</p></td>
                   <td className="py-3 text-center">1</td>
                   <td className="py-3 text-right">{formatCurrency(bill.additionalCharges)}</td>
                 </tr>
@@ -246,12 +346,9 @@ export function BillDetailPage() {
             </tbody>
           </table>
 
-          {/* Inclusions & Exclusions — two-column balanced layout */}
           {pkg && (pkg.inclusionsList?.length || pkg.freeMonitoringList?.length || bill.exclusions?.length) && (
             <div className="mt-6 border-t pt-4">
               <div className="grid grid-cols-2 gap-4">
-
-                {/* LEFT: Inclusions and Free Monitoring */}
                 <div className="flex flex-col gap-4">
                   {pkg.inclusionsList && pkg.inclusionsList.length > 0 && (
                     <div className="border border-emerald-200 bg-emerald-50/30 dark:bg-emerald-950/10 p-3 rounded-xl">
@@ -268,7 +365,6 @@ export function BillDetailPage() {
                       </ul>
                     </div>
                   )}
-
                   {pkg.freeMonitoringList && pkg.freeMonitoringList.length > 0 && (
                     <div className="border border-blue-200 bg-blue-50/30 dark:bg-blue-950/10 p-3 rounded-xl">
                       <p className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-1">
@@ -285,8 +381,6 @@ export function BillDetailPage() {
                     </div>
                   )}
                 </div>
-
-                {/* RIGHT: Exclusions and Policies */}
                 <div className="flex flex-col gap-4">
                   {bill.exclusions && bill.exclusions.length > 0 && (
                     <div className="border border-rose-200 bg-rose-50/30 dark:bg-rose-950/10 p-3 rounded-xl">
@@ -303,7 +397,6 @@ export function BillDetailPage() {
                       </ul>
                     </div>
                   )}
-
                   {pkg?.policiesList && pkg.policiesList.length > 0 && (
                     <div className="border border-slate-200 bg-slate-50/50 dark:bg-slate-900/50 p-3 rounded-xl">
                       <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1">
@@ -311,25 +404,21 @@ export function BillDetailPage() {
                       </p>
                       <ul className="list-disc pl-4 space-y-1">
                         {pkg.policiesList.map((pol, i) => (
-                          <li key={i} className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
-                            {pol}
-                          </li>
+                          <li key={i} className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">{pol}</li>
                         ))}
                       </ul>
                     </div>
                   )}
                 </div>
-
               </div>
             </div>
           )}
 
-          {/* Totals */}
           <div className="flex justify-end">
             <div className="w-64 space-y-2 text-xs border-t-2 border-slate-200 dark:border-slate-700 pt-4">
               <div className="flex justify-between text-slate-500">
                 <span>Subtotal</span>
-                <span>{formatCurrency(subtotal)}</span>
+                <span>{formatCurrency(bill.packagePrice + bill.addOns.reduce((s, a) => s + a.price, 0) + bill.roomCharges + bill.additionalCharges)}</span>
               </div>
               {bill.taxAmount > 0 && (
                 <div className="flex justify-between text-slate-500">
@@ -350,20 +439,25 @@ export function BillDetailPage() {
             </div>
           </div>
 
-          {/* Billing Rule Disclaimer Note (MUST appear on every bill) */}
+          {bill.discountDetails?.applied && (
+            <div className="p-3.5 bg-emerald-50/60 dark:bg-emerald-950/10 border border-emerald-200 dark:border-emerald-900/30 rounded-xl text-xs text-emerald-800 dark:text-emerald-350 mt-4">
+              <p className="font-bold uppercase text-[9px] tracking-wide text-emerald-700 dark:text-emerald-400 mb-1">Discount Authorization Details:</p>
+              <div className="grid grid-cols-2 gap-2 mt-1.5 text-[11px] leading-relaxed">
+                <p><strong>Authorized By:</strong> {bill.discountDetails.authorizedBy}</p>
+                <p><strong>Reason / Category:</strong> {bill.discountDetails.reason}</p>
+                <p className="col-span-2"><strong>Remarks:</strong> {bill.discountDetails.authorizationRemarks}</p>
+                <p className="col-span-2 text-[10px] text-emerald-600 dark:text-emerald-400/80">Authorized on {new Date(bill.discountDetails.authorizedAt || "").toLocaleDateString("en-IN")} at {new Date(bill.discountDetails.authorizedAt || "").toTimeString().slice(0,5)}</p>
+              </div>
+            </div>
+          )}
+
           <div className="mt-6 border-t pt-4 text-[10px] text-slate-500 bg-slate-50/60 p-3.5 rounded-xl border border-slate-200">
             <p className="font-bold uppercase text-[9px] tracking-wide text-slate-600 mb-1">Clinic Billing Rule:</p>
             <p className="italic leading-normal">
               Consultation and monitoring scans included in OPU / egg collection packages and FET packages should not be billed separately. Room stay is optional unless specifically advised.
             </p>
-            {bill.billingFormat === "detailed" && (
-              <p className="mt-2 font-medium">
-                Note: Final bill may vary only when additional investigations, medications, room stay, or clinician-approved add-on is documented.
-              </p>
-            )}
           </div>
 
-          {/* Notes */}
           {bill.billingNotes && (
             <div className="p-3 bg-slate-50 dark:bg-slate-900 border rounded-xl text-xs text-slate-600 dark:text-slate-400 mt-4">
               <p className="font-bold uppercase text-[9px] text-muted-foreground mb-1">Notes</p>
@@ -371,7 +465,6 @@ export function BillDetailPage() {
             </div>
           )}
 
-          {/* Signatures */}
           <div className="pt-10 grid grid-cols-2 gap-16 text-xs">
             {["Patient / Guardian Signature", "Authorized Reception / Billing Desk"].map((label) => (
               <div key={label} className="text-center space-y-6">
@@ -382,13 +475,71 @@ export function BillDetailPage() {
             ))}
           </div>
 
-          {/* Footer */}
           <div className="text-center text-[9px] text-muted-foreground border-t pt-3 leading-relaxed">
             This is a computer-generated invoice. Valid subject to discharge reconciliation. · ASCAS Fertility & Women's
             Center · {new Date().toLocaleDateString("en-IN")}
           </div>
         </div>
       </div>
+
+      <div className="max-w-3xl mx-auto print:hidden space-y-6">
+        {/* Discount Editor */}
+        {payStatus !== "Paid" && (
+          <DiscountEditor
+            bill={bill}
+            onSaveDiscount={handleSaveDiscount}
+          />
+        )}
+
+        {/* Payment Summary Strip */}
+        <PaymentSummaryStrip
+          grandTotal={bill.grandTotal}
+          totalPaid={totalPaid}
+          balanceDue={balanceDue}
+          status={payStatus}
+        />
+
+        {/* Payment Entry Form */}
+        <PaymentEntryForm
+          balanceDue={balanceDue}
+          grandTotal={bill.grandTotal}
+          onPaymentsAdded={handlePaymentsAdded}
+        />
+
+        {/* Payment Timeline */}
+        <PaymentTimeline
+          payments={payments}
+          onViewReceipt={(payment) => {
+            setSelectedReceipt(payment)
+            setIsReceiptModalOpen(true)
+          }}
+          onDeletePayment={handleDeletePayment}
+        />
+
+        {/* Refund Manager */}
+        <RefundManager
+          bill={bill}
+          onRefundProcessed={handleRefundProcessed}
+        />
+
+        {/* Refund Timeline */}
+        <RefundTimeline
+          bill={bill}
+          refunds={bill.refunds ?? []}
+        />
+
+        {/* Audit Log Viewer */}
+        <AuditLogViewer
+          auditLogs={bill.auditLogs ?? []}
+        />
+      </div>
+
+      <PaymentReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => setIsReceiptModalOpen(false)}
+        payment={selectedReceipt}
+        bill={bill}
+      />
 
       {/* Print styles */}
       <style>{`

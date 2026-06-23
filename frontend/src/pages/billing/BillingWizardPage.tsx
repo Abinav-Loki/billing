@@ -6,7 +6,7 @@ import { Input } from "../../components/ui/input"
 import { Badge } from "../../components/ui/badge"
 import { Progress } from "../../components/ui/progress"
 import { formatCurrency, formatDate } from "../../lib/utils"
-import { mockBills, Bill } from "../../lib/mockData"
+import { mockBills, Bill, PaymentMethod, PaymentEntry, PaymentType } from "../../lib/mockData"
 import {
   PACKAGE_MASTER,
   ADDON_MASTER,
@@ -33,7 +33,14 @@ import {
   Check,
   Building2,
   Calendar,
-  Layers
+  Layers,
+  CreditCard,
+  Banknote,
+  Smartphone,
+  Hash,
+  AlertCircle,
+  Shield,
+  BadgeDollarSign,
 } from "lucide-react"
 
 interface OtherItem {
@@ -311,8 +318,16 @@ export function BillingWizardPage() {
   // Step 3: Billing format choice state
   const [billingFormat, setBillingFormat] = React.useState<"inline" | "detailed">("inline")
 
-  // State to track detailed exclusions/add-ons checked and their quantities
-  const [detailedSelections, setDetailedSelections] = React.useState<Record<string, { checked: boolean, qty: number }>>({})
+  // Payment capture state (Step 4.5 — between preview and success)
+  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>("Cash")
+  const [amountPaid, setAmountPaid] = React.useState<number>(0)
+  const [transactionId, setTransactionId] = React.useState("")
+  const [paymentNote, setPaymentNote] = React.useState("")
+  const [paymentEntries, setPaymentEntries] = React.useState<PaymentEntry[]>([])
+  const [paymentStep, setPaymentStep] = React.useState<"enter" | "done">("enter")
+
+  // State to track detailed exclusions/add-ons checked, their quantities and custom prices
+  const [detailedSelections, setDetailedSelections] = React.useState<Record<string, { checked: boolean, qty: number, price?: number }>>({})
 
   // Initialize detailed selections when selected package changes
   // NOTE: Exclusions are NOT pre-loaded from the package defaults —
@@ -322,9 +337,9 @@ export function BillingWizardPage() {
       setExclusions([]) // Always start empty — user adds their own
 
       const items = getOtherItemsForPackage(selectedPackage.id, selectedPackage.category)
-      const initial: Record<string, { checked: boolean, qty: number }> = {}
+      const initial: Record<string, { checked: boolean, qty: number, price?: number }> = {}
       items.forEach(item => {
-        initial[item.name] = { checked: false, qty: 1 }
+        initial[item.name] = { checked: false, qty: 1, price: item.price }
       })
       setDetailedSelections(initial)
     } else {
@@ -374,7 +389,8 @@ export function BillingWizardPage() {
   const detailedItemsTotal = detailedItemsList.reduce((sum, item) => {
     const sel = detailedSelections[item.name]
     if (sel && sel.checked) {
-      return sum + (item.price || 0) * sel.qty
+      const priceToUse = sel.price !== undefined ? sel.price : (item.price || 0)
+      return sum + priceToUse * sel.qty
     }
     return sum
   }, 0)
@@ -437,6 +453,17 @@ export function BillingWizardPage() {
     return item ? item.qty : 1
   }
 
+  // Open payment capture modal (called from step 4 confirm button)
+  const handleOpenPayment = () => {
+    if (!selectedPackage) return
+    // Pre-fill amount paid = grand total (full payment default)
+    setAmountPaid(grandTotal)
+    setTransactionId(`TXN-${Date.now().toString().slice(-8)}`)
+    setPaymentEntries([])
+    setPaymentStep("enter")
+    setStep(45) // special step 4.5
+  }
+
   // Confirm and Generate Bill in DB
   const handleConfirmAndGenerate = () => {
     if (!selectedPackage) return
@@ -475,6 +502,14 @@ export function BillingWizardPage() {
           .map(item => item.name)
       : exclusions
 
+    const totalAmountPaid = paymentEntries.reduce((s, e) => s + e.amount, 0)
+    const computedBalance = Math.max(0, grandTotal - totalAmountPaid)
+    const computedStatus: Bill["status"] = totalAmountPaid <= 0
+      ? "Pending"
+      : computedBalance <= 0
+      ? "Paid"
+      : "Partially Paid"
+
     const newBill: Bill = {
       billNo,
       uhid: patientId,
@@ -488,12 +523,37 @@ export function BillingWizardPage() {
       taxAmount: 0,
       grandTotal,
       date: billDate,
-      status: "Pending",
+      status: computedStatus,
       doctorName: getDoctorName(),
       billingNotes: discountNote ? `Discount note: ${discountNote}` : undefined,
       billingMethod: "full_payment",
       billingFormat: billingFormat,
-      exclusions: generatedExclusions
+      exclusions: generatedExclusions,
+      payments: paymentEntries.map((e, index) => {
+        const year = new Date().getFullYear()
+        let totalExistingPayments = 0
+        mockBills.forEach(b => {
+          if (b.payments) {
+            totalExistingPayments += b.payments.length
+          }
+        })
+        const receiptNo = `RCPT-${year}-${String(totalExistingPayments + index + 12).padStart(4, "0")}`
+        
+        return {
+          ...e,
+          id: `PYMT-${billNo}-${index + 1}`,
+          receiptNo,
+          paymentType: (totalAmountPaid >= grandTotal ? "Full Payment" : "Advance / Partial") as PaymentType,
+          time: new Date().toTimeString().slice(0, 5),
+          receivedBy: "Billing Desk",
+          createdBy: "Billing Desk",
+          createdAt: new Date().toISOString(),
+          transactionRef: e.transactionId,
+          remarks: e.note
+        }
+      }),
+      amountPaid: totalAmountPaid,
+      paymentBalance: computedBalance,
     }
 
     mockBills.unshift(newBill)
@@ -513,6 +573,12 @@ export function BillingWizardPage() {
     setDiscountNote("")
     setExclusions([])
     setNewExclusionText("")
+    setPaymentMethod("Cash")
+    setAmountPaid(0)
+    setTransactionId("")
+    setPaymentNote("")
+    setPaymentEntries([])
+    setPaymentStep("enter")
     
     // Increment bill sequence for the next one
     const prefix = "ASCAS-2025-"
@@ -653,7 +719,7 @@ export function BillingWizardPage() {
           </p>
         </div>
         
-        {step < 5 && (
+        {step < 5 && step !== 45 && (
           <div className="flex items-center gap-2 flex-wrap">
             {[
               { id: 1, label: "Patient details" },
@@ -679,7 +745,7 @@ export function BillingWizardPage() {
         )}
       </div>
 
-      {step < 5 && (
+      {step < 5 && step !== 45 && (
         <Progress value={((step - 1) / 3) * 100} className="h-1.5 print-hide" />
       )}
 
@@ -1216,7 +1282,8 @@ export function BillingWizardPage() {
                   </p>
                   <div className="space-y-2.5">
                     {detailedItemsList.map((item, idx) => {
-                      const sel = detailedSelections[item.name] || { checked: false, qty: 1 }
+                      const sel = detailedSelections[item.name] || { checked: false, qty: 1, price: item.price }
+                      const isPriceTypable = item.price === 0
                       return (
                         <div key={idx} className="flex flex-col p-2.5 border rounded-lg bg-white dark:bg-slate-900 shadow-sm gap-2 font-sans">
                           <div className="flex items-start gap-2">
@@ -1236,9 +1303,29 @@ export function BillingWizardPage() {
                                 {item.name.split("\n").join(" ")}
                               </p>
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-[10px] text-primary font-bold">
-                                  {item.price > 0 ? formatCurrency(item.price) : "No Charge"}
-                                </span>
+                                {isPriceTypable ? (
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[10px] text-slate-500 font-bold">₹</span>
+                                    <input
+                                      type="number"
+                                      placeholder="Price"
+                                      min={0}
+                                      value={sel.price !== undefined ? sel.price : ""}
+                                      onChange={(e) => {
+                                        const p = Math.max(0, parseFloat(e.target.value) || 0)
+                                        setDetailedSelections(prev => ({
+                                          ...prev,
+                                          [item.name]: { ...prev[item.name], price: p }
+                                        }))
+                                      }}
+                                      className="w-20 h-5 px-1 border rounded text-[10px] font-bold"
+                                    />
+                                  </div>
+                                ) : (
+                                  <span className="text-[10px] text-primary font-bold">
+                                    {formatCurrency(item.price)}
+                                  </span>
+                                )}
                                 {item.note && (
                                   <span className="text-[9px] text-muted-foreground font-semibold">
                                     ({item.note})
@@ -1399,6 +1486,7 @@ export function BillingWizardPage() {
                         })
                         .map((item, idx) => {
                           const sel = detailedSelections[item.name]
+                          const priceToUse = sel.price !== undefined ? sel.price : item.price
                           return (
                             <tr key={`det-${idx}`}>
                               <td className="py-3 pr-4">
@@ -1409,7 +1497,7 @@ export function BillingWizardPage() {
                               </td>
                               <td className="py-3 text-center font-bold">{sel.qty}</td>
                               <td className="py-3 text-right font-bold text-slate-750 dark:text-slate-200">
-                                {item.price > 0 ? formatCurrency(item.price * sel.qty) : "As applicable"}
+                                {priceToUse > 0 ? formatCurrency(priceToUse * sel.qty) : "As applicable"}
                               </td>
                             </tr>
                           )
@@ -1580,52 +1668,296 @@ export function BillingWizardPage() {
       )}
 
       {/* ════════════════════════════════════════════════════════════
+          STEP 4.5: PAYMENT CAPTURE
+      ════════════════════════════════════════════════════════════ */}
+      {step === 45 && selectedPackage && (
+        <div className="max-w-2xl mx-auto space-y-6 print-hide">
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="icon" onClick={() => setStep(4)} className="h-9 w-9 shrink-0">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Record Payment</h2>
+              <p className="text-xs text-muted-foreground">Enter payment details before generating the bill. You can record multiple payments.</p>
+            </div>
+          </div>
+
+          {/* Bill Summary Banner */}
+          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <p className="text-xs text-muted-foreground font-semibold">Bill No</p>
+              <p className="font-mono font-bold text-primary">{billNo}</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">{patientName} · {selectedPackage.name}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground font-semibold">Grand Total</p>
+              <p className="text-2xl font-black text-primary">{formatCurrency(grandTotal)}</p>
+              {paymentEntries.length > 0 && (
+                <p className="text-xs font-bold text-emerald-600 mt-0.5">
+                  Paid: {formatCurrency(paymentEntries.reduce((s, e) => s + e.amount, 0))}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Payment Entry Form */}
+          <Card className="glass-panel border-slate-200 shadow-xl">
+            <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b p-5">
+              <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                <Banknote className="h-4.5 w-4.5 text-primary" />
+                Add Payment Entry
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 space-y-4">
+              {/* Payment Method */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Payment Method</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["Cash", "Card", "UPI", "Bank Transfer", "Insurance", "Cheque"] as PaymentMethod[]).map(method => {
+                    const icons: Partial<Record<PaymentMethod, React.ReactNode>> = {
+                      Cash: <Banknote className="h-4 w-4" />,
+                      Card: <CreditCard className="h-4 w-4" />,
+                      UPI: <Smartphone className="h-4 w-4" />,
+                      "Bank Transfer": <Hash className="h-4 w-4" />,
+                      Insurance: <Shield className="h-4 w-4" />,
+                      Cheque: <BadgeDollarSign className="h-4 w-4" />,
+                    }
+                    return (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={() => setPaymentMethod(method)}
+                        className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-xs font-semibold transition-all ${
+                          paymentMethod === method
+                            ? "border-primary bg-primary/5 text-primary shadow-sm"
+                            : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
+                        }`}
+                      >
+                        {icons[method]}
+                        <span className="truncate">{method}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Amount */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Amount Paid (₹)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={100}
+                    value={amountPaid || ""}
+                    onChange={e => setAmountPaid(Number(e.target.value))}
+                    placeholder="e.g. 50000"
+                  />
+                </div>
+                {/* Transaction ID */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Transaction ID / Ref No.</label>
+                  <Input
+                    type="text"
+                    value={transactionId}
+                    onChange={e => setTransactionId(e.target.value)}
+                    placeholder="e.g. TXN-12345678"
+                  />
+                </div>
+              </div>
+
+              {/* Note */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Payment Note <span className="text-slate-400 font-normal normal-case">(optional)</span></label>
+                <Input
+                  type="text"
+                  value={paymentNote}
+                  onChange={e => setPaymentNote(e.target.value)}
+                  placeholder="e.g. Advance payment, instalment 1, etc."
+                />
+              </div>
+
+              <Button
+                className="w-full gap-2"
+                onClick={() => {
+                  if (!amountPaid || amountPaid <= 0) {
+                    alert("Please enter a valid payment amount.")
+                    return
+                  }
+                  if (!transactionId.trim()) {
+                    alert("Please enter a Transaction ID / Reference Number.")
+                    return
+                  }
+                  const entry: PaymentEntry = {
+                    transactionId: transactionId.trim(),
+                    method: paymentMethod,
+                    amount: amountPaid,
+                    date: new Date().toISOString().split("T")[0],
+                    note: paymentNote.trim() || undefined,
+                  }
+                  setPaymentEntries(prev => [...prev, entry])
+                  // Prepare next entry
+                  const remaining = grandTotal - [...paymentEntries, entry].reduce((s, e) => s + e.amount, 0)
+                  setAmountPaid(Math.max(0, remaining))
+                  setTransactionId(`TXN-${Date.now().toString().slice(-8)}`)
+                  setPaymentNote("")
+                }}
+              >
+                <Plus className="h-4 w-4" /> Add Payment Entry
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Recorded Payments */}
+          {paymentEntries.length > 0 && (
+            <Card className="glass-panel border-slate-200 shadow-md">
+              <CardHeader className="border-b p-4">
+                <CardTitle className="text-sm font-bold text-slate-700 dark:text-slate-200">Recorded Payments</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {paymentEntries.map((entry, i) => (
+                    <div key={i} className="flex items-center justify-between px-5 py-3.5 text-xs">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-800 dark:text-slate-200">{entry.method}</span>
+                          <span className="font-mono text-slate-500">{entry.transactionId}</span>
+                        </div>
+                        {entry.note && <p className="text-muted-foreground">{entry.note}</p>}
+                        <p className="text-slate-400">{formatDate(entry.date)}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-extrabold text-emerald-600 text-sm">{formatCurrency(entry.amount)}</span>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentEntries(prev => prev.filter((_, idx) => idx !== i))}
+                          className="text-slate-400 hover:text-rose-500 transition-colors"
+                        >
+                          <Trash className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Balance Summary */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-900/40 border-t flex justify-between items-center text-xs">
+                  <div className="space-y-0.5">
+                    <p className="text-muted-foreground font-semibold">Total Paid: <span className="text-emerald-600 font-extrabold">{formatCurrency(paymentEntries.reduce((s, e) => s + e.amount, 0))}</span></p>
+                    <p className="text-muted-foreground font-semibold">Balance Due: <span className={`font-extrabold ${Math.max(0, grandTotal - paymentEntries.reduce((s, e) => s + e.amount, 0)) > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>{formatCurrency(Math.max(0, grandTotal - paymentEntries.reduce((s, e) => s + e.amount, 0)))}</span></p>
+                  </div>
+                  <Badge variant={paymentEntries.reduce((s, e) => s + e.amount, 0) >= grandTotal ? "success" : paymentEntries.length > 0 ? "info" : "warning"}>
+                    {paymentEntries.reduce((s, e) => s + e.amount, 0) >= grandTotal ? "Fully Paid" : paymentEntries.length > 0 ? "Partially Paid" : "Pending"}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep(4)} className="flex-1">
+              <ArrowLeft className="h-4 w-4 mr-1.5" /> Back to Preview
+            </Button>
+            <Button
+              onClick={handleConfirmAndGenerate}
+              className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <CheckCircle className="h-4 w-4" />
+              {paymentEntries.length > 0 ? "Generate Bill" : "Skip Payment & Generate"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════
           STEP 5: SUCCESS DONE
       ════════════════════════════════════════════════════════════ */}
       {step === 5 && selectedPackage && (
         <Card className="glass-panel border-slate-200 shadow-xl max-w-lg mx-auto print-hide">
-          <CardContent className="py-12 space-y-6 text-center">
+          <CardContent className="py-10 space-y-5 text-center">
             
             <div className="h-20 w-20 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 rounded-full flex items-center justify-center mx-auto animate-bounce">
               <Check className="h-10 w-10 stroke-[3]" />
             </div>
 
             <div>
-              <h2 className="text-xl font-black text-slate-850 dark:text-slate-100">Invoice Generated successfully!</h2>
+              <h2 className="text-xl font-black text-slate-850 dark:text-slate-100">Bill Generated Successfully!</h2>
               <p className="text-xs text-muted-foreground mt-1">
-                The estimate slip was successfully appended to the local billing records.
+                The invoice has been appended to the billing records.
               </p>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-900 border rounded-xl p-5 text-left space-y-2.5 text-xs">
+            {/* Bill & Patient Summary */}
+            <div className="bg-slate-50 dark:bg-slate-900 border rounded-xl p-4 text-left space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground font-semibold">Bill No:</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">{billNo}</span>
+                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{billNo}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground font-semibold">Patient Name:</span>
+                <span className="text-muted-foreground font-semibold">Patient:</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">{patientName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground font-semibold">Patient File ID:</span>
-                <span className="font-semibold text-slate-700 dark:text-slate-350">{patientId}</span>
+                <span className="text-muted-foreground font-semibold">Doctor:</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">{getDoctorName()}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground font-semibold">Primary Package:</span>
-                <span className="font-semibold text-slate-700 dark:text-slate-350 truncate max-w-xs">{selectedPackage.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground font-semibold">Treating Doctor:</span>
-                <span className="font-semibold text-slate-700 dark:text-slate-350">{getDoctorName()}</span>
-              </div>
-              <div className="flex justify-between border-t pt-2.5 text-primary text-sm font-extrabold">
+              <div className="flex justify-between border-t pt-2 text-primary text-sm font-extrabold">
                 <span>Grand Total:</span>
                 <span>{formatCurrency(grandTotal)}</span>
               </div>
             </div>
 
-            <div className="flex flex-col gap-2.5 pt-4">
-              <Button onClick={() => navigate("/bills")} className="w-full h-10">
+            {/* Payment Summary */}
+            <div className="bg-white dark:bg-slate-900 border-2 border-emerald-200 dark:border-emerald-900 rounded-xl p-4 text-left space-y-3 text-xs">
+              <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-1">Payment Summary</p>
+              
+              {paymentEntries.length > 0 ? (
+                <>
+                  {paymentEntries.map((entry, i) => (
+                    <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="info" className="text-[9px] px-1.5 py-0.5">{entry.method}</Badge>
+                          <span className="font-mono text-slate-500 text-[10px]">{entry.transactionId}</span>
+                        </div>
+                        {entry.note && <p className="text-muted-foreground text-[10px]">{entry.note}</p>}
+                      </div>
+                      <span className="font-extrabold text-emerald-600">{formatCurrency(entry.amount)}</span>
+                    </div>
+                  ))}
+                  <div className="pt-2 space-y-1.5 border-t">
+                    <div className="flex justify-between font-semibold text-slate-600 dark:text-slate-400">
+                      <span>Amount Paid:</span>
+                      <span className="text-emerald-600 font-extrabold">{formatCurrency(paymentEntries.reduce((s, e) => s + e.amount, 0))}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold">
+                      <span className="text-slate-600 dark:text-slate-400">Balance Remaining:</span>
+                      <span className={`font-extrabold ${Math.max(0, grandTotal - paymentEntries.reduce((s,e)=>s+e.amount,0)) > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                        {formatCurrency(Math.max(0, grandTotal - paymentEntries.reduce((s,e)=>s+e.amount,0)))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-600 dark:text-slate-400 font-semibold">Status:</span>
+                      <Badge variant={paymentEntries.reduce((s,e)=>s+e.amount,0) >= grandTotal ? "success" : "info"}>
+                        {paymentEntries.reduce((s,e)=>s+e.amount,0) >= grandTotal ? "Fully Paid" : "Partially Paid"}
+                      </Badge>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-2 text-amber-600 py-1">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span className="font-semibold">No payment recorded. Bill is marked as Pending.</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2.5 pt-2">
+              <Button onClick={() => navigate(`/bills/${billNo}`)} className="w-full h-10">
+                View Bill Details
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/bills")} className="w-full h-10">
                 View All Bills
               </Button>
               <Button variant="outline" onClick={resetWizard} className="w-full h-10">
