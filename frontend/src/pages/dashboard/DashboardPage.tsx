@@ -78,14 +78,14 @@ export function DashboardPage() {
 
       {/* Summary Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Card className="glass-card">
+        <Card className="neumorphic-card">
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Bills Today</p>
                 <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">8</h3>
               </div>
-              <div className="p-3 bg-teal-500/10 rounded-xl text-primary">
+              <div className="p-3 neumorphic-inset rounded-xl text-teal-600 dark:text-teal-400">
                 <FileText className="h-5 w-5" />
               </div>
             </div>
@@ -96,14 +96,14 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="neumorphic-card">
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Revenue Today</p>
                 <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatCurrency(440000)}</h3>
               </div>
-              <div className="p-3 bg-sky-500/10 rounded-xl text-sky-500">
+              <div className="p-3 neumorphic-inset rounded-xl text-sky-600 dark:text-sky-400">
                 <DollarSign className="h-5 w-5" />
               </div>
             </div>
@@ -114,14 +114,14 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="neumorphic-card">
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Bills This Month</p>
                 <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">124</h3>
               </div>
-              <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-500">
+              <div className="p-3 neumorphic-inset rounded-xl text-indigo-600 dark:text-indigo-400">
                 <Calendar className="h-5 w-5" />
               </div>
             </div>
@@ -132,14 +132,14 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="neumorphic-card">
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pending Payments</p>
                 <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatCurrency(280000)}</h3>
               </div>
-              <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500">
+              <div className="p-3 neumorphic-inset rounded-xl text-amber-600 dark:text-amber-450">
                 <Clock className="h-5 w-5" />
               </div>
             </div>
