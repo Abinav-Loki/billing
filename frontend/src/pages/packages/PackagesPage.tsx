@@ -186,10 +186,10 @@ export function PackagesPage() {
               return (
                 <Card 
                   key={pkg.id} 
-                  className={`overflow-hidden transition-all duration-300 ${
+                  className={`overflow-hidden transition-all duration-300 neumorphic-card neumorphic-card-interactive ${
                     isPkgSelected 
-                      ? "neumorphic-card border-primary/60 dark:border-primary/50 shadow-md" 
-                      : "neumorphic-card"
+                      ? "border-primary/60 dark:border-primary/50 shadow-md" 
+                      : ""
                   }`}
                 >
                   <button
