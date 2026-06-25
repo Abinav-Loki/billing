@@ -156,9 +156,9 @@ export function DashboardPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <button
             onClick={() => navigate("/patients/new")}
-            className="flex items-center gap-3.5 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 dark:hover:border-primary/50 bg-card hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-all text-left shadow-sm group"
+            className="flex items-center gap-3.5 p-4 rounded-xl neumorphic-card neumorphic-card-interactive text-left group"
           >
-            <div className="p-2.5 bg-teal-50 dark:bg-teal-950/20 text-primary rounded-lg group-hover:scale-110 transition-transform">
+            <div className="p-2.5 neumorphic-inset text-teal-600 dark:text-teal-400 rounded-lg group-hover:scale-110 transition-transform">
               <UserPlus className="h-5 w-5" />
             </div>
             <div>
@@ -169,9 +169,9 @@ export function DashboardPage() {
 
           <button
             onClick={() => navigate("/billing/new")}
-            className="flex items-center gap-3.5 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 dark:hover:border-primary/50 bg-card hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-all text-left shadow-sm group"
+            className="flex items-center gap-3.5 p-4 rounded-xl neumorphic-card neumorphic-card-interactive text-left group"
           >
-            <div className="p-2.5 bg-sky-50 dark:bg-sky-950/20 text-sky-550 rounded-lg group-hover:scale-110 transition-transform">
+            <div className="p-2.5 neumorphic-inset text-sky-600 dark:text-sky-400 rounded-lg group-hover:scale-110 transition-transform">
               <PlusCircle className="h-5 w-5" />
             </div>
             <div>
@@ -182,9 +182,9 @@ export function DashboardPage() {
 
           <button
             onClick={() => setIsSearchModalOpen(true)}
-            className="flex items-center gap-3.5 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 dark:hover:border-primary/50 bg-card hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-all text-left shadow-sm group"
+            className="flex items-center gap-3.5 p-4 rounded-xl neumorphic-card neumorphic-card-interactive text-left group"
           >
-            <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-500 rounded-lg group-hover:scale-110 transition-transform">
+            <div className="p-2.5 neumorphic-inset text-indigo-600 dark:text-indigo-400 rounded-lg group-hover:scale-110 transition-transform">
               <Search className="h-5 w-5" />
             </div>
             <div>
@@ -195,9 +195,9 @@ export function DashboardPage() {
 
           <button
             onClick={() => setIsPrintModalOpen(true)}
-            className="flex items-center gap-3.5 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 dark:hover:border-primary/50 bg-card hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-all text-left shadow-sm group"
+            className="flex items-center gap-3.5 p-4 rounded-xl neumorphic-card neumorphic-card-interactive text-left group"
           >
-            <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 text-amber-500 rounded-lg group-hover:scale-110 transition-transform">
+            <div className="p-2.5 neumorphic-inset text-amber-600 dark:text-amber-400 rounded-lg group-hover:scale-110 transition-transform">
               <Printer className="h-5 w-5" />
             </div>
             <div>
