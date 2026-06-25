@@ -130,8 +130,8 @@
 
 .dark .neumorphic-card-interactive:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  border-color: rgba(30, 41, 59, 0.9);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -2px rgba(0, 0, 0, 0.15);
+  border-color: rgba(16, 185, 129, 0.8); /* Green borderline hover effect */
 }
 
 .neumorphic-card-interactive:active,
