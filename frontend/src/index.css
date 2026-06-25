@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    --background: 210 40% 96%;
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
@@ -95,4 +95,78 @@
 
 .glass-card {
   @apply bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300;
+}
+
+/* Neumorphic soft UI styling */
+.neumorphic-card {
+  background: rgb(241, 245, 249); /* slate-100 matches the new background */
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 
+    5px 5px 10px rgba(163, 178, 196, 0.5), 
+    -5px -5px 10px rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .neumorphic-card {
+  background: rgb(15, 23, 42); /* slate-900 */
+  border: 1px solid rgba(30, 41, 59, 0.5);
+  box-shadow: 
+    5px 5px 10px rgba(2, 6, 23, 0.7), 
+    -5px -5px 10px rgba(30, 41, 59, 0.45);
+  border-radius: var(--radius);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.neumorphic-card-interactive {
+  @apply cursor-pointer;
+}
+
+.neumorphic-card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    7px 7px 14px rgba(163, 178, 196, 0.65), 
+    -7px -7px 14px rgba(255, 255, 255, 1);
+  border-color: rgba(255, 255, 255, 0.95);
+}
+
+.dark .neumorphic-card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    7px 7px 14px rgba(2, 6, 23, 0.85), 
+    -7px -7px 14px rgba(30, 41, 59, 0.65);
+  border-color: rgba(30, 41, 59, 0.7);
+}
+
+.neumorphic-card-interactive:active,
+.neumorphic-card-interactive.active {
+  transform: translateY(1px);
+  box-shadow: 
+    inset 3px 3px 6px rgba(163, 178, 196, 0.6), 
+    inset -3px -3px 6px rgba(255, 255, 255, 0.9);
+}
+
+.dark .neumorphic-card-interactive:active,
+.dark .neumorphic-card-interactive.active {
+  transform: translateY(1px);
+  box-shadow: 
+    inset 3px 3px 6px rgba(2, 6, 23, 0.8), 
+    inset -3px -3px 6px rgba(30, 41, 59, 0.5);
+}
+
+/* Inset Neumorphic Element */
+.neumorphic-inset {
+  background: rgb(241, 245, 249);
+  box-shadow: 
+    inset 3px 3px 6px rgba(163, 178, 196, 0.6), 
+    inset -3px -3px 6px rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dark .neumorphic-inset {
+  background: rgb(15, 23, 42);
+  box-shadow: 
+    inset 3px 3px 6px rgba(2, 6, 23, 0.8), 
+    inset -3px -3px 6px rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(30, 41, 59, 0.3);
 }
