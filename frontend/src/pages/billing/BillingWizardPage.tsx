@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
@@ -279,6 +279,7 @@ function getOtherItemsForPackage(pkgId: string, pkgCategory: string): OtherItem[
 
 export function BillingWizardPage() {
   const navigate = useNavigate()
+  const location = useLocation()
 
   // Wizard Steps:
   // 1: Patient Details Form
@@ -302,6 +303,34 @@ export function BillingWizardPage() {
   const [selectedAddOns, setSelectedAddOns] = React.useState<{ addon: AddOnItem; qty: number }[]>([])
   const [exclusions, setExclusions] = React.useState<string[]>([])
   const [newExclusionText, setNewExclusionText] = React.useState("")
+
+  // Parse query parameters from packages page redirect
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const packageId = params.get("packageId")
+    const addonIds = params.get("addonIds")
+
+    if (packageId) {
+      const pkg = PACKAGE_MASTER.find(p => p.id === packageId)
+      if (pkg) {
+        setSelectedPackage(pkg)
+      }
+    }
+
+    if (addonIds) {
+      const ids = addonIds.split(",")
+      const addonsToSelect: { addon: AddOnItem; qty: number }[] = []
+      ids.forEach(id => {
+        const addon = ADDON_MASTER.find(a => a.id === id)
+        if (addon) {
+          addonsToSelect.push({ addon, qty: 1 })
+        }
+      })
+      if (addonsToSelect.length > 0) {
+        setSelectedAddOns(addonsToSelect)
+      }
+    }
+  }, [location.search])
   
   // Package search & category filtering state
   const [activeCategory, setActiveCategory] = React.useState<string>("IVF / ICSI / FET")

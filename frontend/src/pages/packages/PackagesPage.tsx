@@ -31,6 +31,20 @@ export function PackagesPage() {
   const [search, setSearch] = React.useState("")
   const [activeCategory, setActiveCategory] = React.useState<PackageCategory | "Add-ons" | "All">("All")
   const [expandedPackages, setExpandedPackages] = React.useState<string[]>([])
+  
+  const [selectedPackage, setSelectedPackage] = React.useState<PackageMaster | null>(null)
+  const [selectedAddons, setSelectedAddons] = React.useState<AddOnItem[]>([])
+
+  const toggleAddon = (addon: AddOnItem) => {
+    setSelectedAddons((prev) => {
+      const exists = prev.some((a) => a.id === addon.id)
+      if (exists) {
+        return prev.filter((a) => a.id !== addon.id)
+      } else {
+        return [...prev, addon]
+      }
+    })
+  }
 
   const categoryColors: Record<string, string> = {
     "IVF / ICSI / FET": "bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300",
@@ -111,7 +125,7 @@ export function PackagesPage() {
           { label: "Surgical", value: getPackagesByCategory("Surgical / Procedure Packages").length, color: "text-sky-600" },
           { label: "Cryo / Pooling", value: getPackagesByCategory("Cryostorage / Oocyte / Sperm Cryopreservation").length + getPackagesByCategory("Embryo Pooling / Oocyte Accumulation").length, color: "text-emerald-600" },
         ].map((stat) => (
-          <Card key={stat.label} className="glass-panel">
+          <Card key={stat.label} className="neumorphic-card">
             <CardContent className="pt-4 pb-3">
               <p className="text-[10px] uppercase font-bold text-muted-foreground">{stat.label}</p>
               <p className={`text-2xl font-extrabold mt-1 ${stat.color}`}>{stat.value}</p>
@@ -168,8 +182,16 @@ export function PackagesPage() {
           ) : (
             filteredPackages.map((pkg) => {
               const isExpanded = expandedPackages.includes(pkg.id)
+              const isPkgSelected = selectedPackage?.id === pkg.id
               return (
-                <Card key={pkg.id} className="glass-panel overflow-hidden">
+                <Card 
+                  key={pkg.id} 
+                  className={`overflow-hidden transition-all duration-300 ${
+                    isPkgSelected 
+                      ? "neumorphic-card border-primary/60 dark:border-primary/50 shadow-md" 
+                      : "neumorphic-card"
+                  }`}
+                >
                   <button
                     onClick={() => toggleExpand(pkg.id)}
                     className="w-full text-left"
@@ -178,6 +200,9 @@ export function PackagesPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span className="text-[10px] font-mono font-bold text-muted-foreground">{pkg.id}</span>
+                          {isPkgSelected && (
+                            <Badge variant="success" className="text-[9px] py-0 px-1.5 h-4">Selected</Badge>
+                          )}
                           <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${categoryColors[pkg.category] ?? "bg-slate-100 text-slate-600"}`}>
                             {pkg.category === "Cryostorage / Oocyte / Sperm Cryopreservation"
                               ? "Cryostorage"
@@ -283,14 +308,38 @@ export function PackagesPage() {
                       </div>
 
                       {/* CTA */}
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-2">
                         <Button
                           size="sm"
-                          onClick={() => navigate("/billing/new")}
-                          className="gap-1.5 text-xs"
+                          variant={isPkgSelected ? "default" : "outline"}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedPackage(isPkgSelected ? null : pkg)
+                          }}
+                          className={`gap-1.5 text-xs ${isPkgSelected ? "bg-emerald-600 hover:bg-emerald-700 text-white border-0" : ""}`}
                         >
-                          <Package className="h-3.5 w-3.5" /> Bill this Package
+                          {isPkgSelected ? (
+                            <>
+                              <CheckCircle className="h-3.5 w-3.5" /> Selected
+                            </>
+                          ) : (
+                            <>
+                              <Package className="h-3.5 w-3.5" /> Select Package
+                            </>
+                          )}
                         </Button>
+                        {!isPkgSelected && (
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigate(`/billing/new?packageId=${pkg.id}`)
+                            }}
+                            className="gap-1.5 text-xs font-bold"
+                          >
+                            Bill Instantly
+                          </Button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -311,29 +360,95 @@ export function PackagesPage() {
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredAddOns.map((addon) => (
-              <Card key={addon.id} className="glass-panel">
-                <CardContent className="pt-4 pb-3">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 min-w-0 pr-3">
-                      <p className="text-[10px] font-mono text-muted-foreground">{addon.id}</p>
-                      <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 mt-0.5 leading-snug">
-                        {addon.name}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${lineItemCategoryColors[addon.category] ?? "bg-slate-100 text-slate-600"}`}>
-                          {addon.category}
-                        </span>
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${addon.status === "Active" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" : "bg-red-100 text-red-700"}`}>
-                          {addon.status}
-                        </span>
+            {filteredAddOns.map((addon) => {
+              const isAddonSelected = selectedAddons.some((a) => a.id === addon.id)
+              return (
+                <button
+                  key={addon.id}
+                  onClick={() => toggleAddon(addon)}
+                  className={`w-full text-left rounded-xl transition-all duration-300 neumorphic-card ${
+                    isAddonSelected
+                      ? "neumorphic-inset border-primary/60 dark:border-primary/55"
+                      : "neumorphic-card-interactive"
+                  }`}
+                >
+                  <CardContent className="pt-4 pb-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 min-w-0 pr-3">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-[10px] font-mono text-muted-foreground">{addon.id}</p>
+                          {isAddonSelected && (
+                            <Badge variant="success" className="text-[9px] py-0 px-1 h-3.5">Selected</Badge>
+                          )}
+                        </div>
+                        <h4 className={`font-bold text-sm mt-0.5 leading-snug ${isAddonSelected ? "text-primary font-extrabold" : "text-slate-800 dark:text-slate-100"}`}>
+                          {addon.name}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${lineItemCategoryColors[addon.category] ?? "bg-slate-100 text-slate-600"}`}>
+                            {addon.category}
+                          </span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${addon.status === "Active" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" : "bg-red-100 text-red-700"}`}>
+                            {addon.status}
+                          </span>
+                        </div>
                       </div>
+                      <p className={`text-base font-extrabold shrink-0 ${isAddonSelected ? "text-primary" : "text-slate-700 dark:text-slate-300"}`}>{formatCurrency(addon.price)}</p>
                     </div>
-                    <p className="text-base font-extrabold text-primary shrink-0">{formatCurrency(addon.price)}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Floating Action Strip for Billing */}
+      {(selectedPackage || selectedAddons.length > 0) && (
+        <div className="fixed bottom-6 left-6 right-6 md:left-72 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center gap-3">
+            <div className="p-3 neumorphic-inset rounded-xl text-primary">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-800 dark:text-slate-100">Selections for Billing</h4>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground mt-0.5">
+                {selectedPackage && (
+                  <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
+                    {selectedPackage.name}
+                  </span>
+                )}
+                {selectedAddons.length > 0 && (
+                  <span className="bg-orange-100 dark:bg-orange-950/45 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full font-semibold">
+                    {selectedAddons.length} Add-on{selectedAddons.length > 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => {
+                setSelectedPackage(null)
+                setSelectedAddons([])
+              }}
+              className="text-muted-foreground hover:text-slate-800 dark:hover:text-slate-100"
+            >
+              Clear All
+            </Button>
+            <Button
+              onClick={() => {
+                const pkgQuery = selectedPackage ? `packageId=${selectedPackage.id}` : ""
+                const addonsQuery = selectedAddons.length > 0 ? `addonIds=${selectedAddons.map(a => a.id).join(",")}` : ""
+                const query = [pkgQuery, addonsQuery].filter(Boolean).join("&")
+                navigate(`/billing/new?${query}`)
+              }}
+              className="gap-2 font-bold w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4" /> Create Bill
+            </Button>
           </div>
         </div>
       )}

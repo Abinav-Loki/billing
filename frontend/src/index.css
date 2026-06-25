@@ -110,10 +110,8 @@
 
 .dark .neumorphic-card {
   background: rgb(15, 23, 42); /* slate-900 */
-  border: 1px solid rgba(30, 41, 59, 0.5);
-  box-shadow: 
-    5px 5px 10px rgba(2, 6, 23, 0.7), 
-    -5px -5px 10px rgba(30, 41, 59, 0.45);
+  border: 1px solid rgba(30, 41, 59, 0.6);
+  box-shadow: none;
   border-radius: var(--radius);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -131,11 +129,9 @@
 }
 
 .dark .neumorphic-card-interactive:hover {
-  transform: translateY(-2px);
-  box-shadow: 
-    7px 7px 14px rgba(2, 6, 23, 0.85), 
-    -7px -7px 14px rgba(30, 41, 59, 0.65);
-  border-color: rgba(30, 41, 59, 0.7);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  border-color: rgba(30, 41, 59, 0.9);
 }
 
 .neumorphic-card-interactive:active,
@@ -148,10 +144,8 @@
 
 .dark .neumorphic-card-interactive:active,
 .dark .neumorphic-card-interactive.active {
-  transform: translateY(1px);
-  box-shadow: 
-    inset 3px 3px 6px rgba(2, 6, 23, 0.8), 
-    inset -3px -3px 6px rgba(30, 41, 59, 0.5);
+  transform: translateY(0px);
+  box-shadow: none;
 }
 
 /* Inset Neumorphic Element */
@@ -165,8 +159,6 @@
 
 .dark .neumorphic-inset {
   background: rgb(15, 23, 42);
-  box-shadow: 
-    inset 3px 3px 6px rgba(2, 6, 23, 0.8), 
-    inset -3px -3px 6px rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(30, 41, 59, 0.3);
+  box-shadow: none;
+  border: 1px solid rgba(30, 41, 59, 0.5);
 }
