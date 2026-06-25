@@ -211,7 +211,7 @@ export function DashboardPage() {
       {/* Analytics Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Collection Trend */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 neumorphic-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="text-base font-bold">Weekly Collection Trend</CardTitle>
@@ -238,7 +238,7 @@ export function DashboardPage() {
         </Card>
 
         {/* Package Revenue Share */}
-        <Card>
+        <Card className="neumorphic-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-bold">Revenue by Package Type</CardTitle>
             <p className="text-xs text-muted-foreground">Category-wise distributions</p>
@@ -248,13 +248,13 @@ export function DashboardPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={packageRevenueData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={75}
-                    paddingAngle={3}
-                    dataKey="value"
+                     data={packageRevenueData}
+                     cx="50%"
+                     cy="50%"
+                     innerRadius={55}
+                     outerRadius={75}
+                     paddingAngle={3}
+                     dataKey="value"
                   >
                     {packageRevenueData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -266,7 +266,7 @@ export function DashboardPage() {
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               {packageRevenueData.map((item) => (
-                <div key={item.name} className="flex items-center gap-2 border border-slate-100 dark:border-slate-800 p-2 rounded-lg">
+                <div key={item.name} className="flex items-center gap-2 neumorphic-inset p-2 rounded-lg">
                   <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                   <div className="min-w-0 flex-1">
                     <p className="text-muted-foreground truncate">{item.name}</p>
