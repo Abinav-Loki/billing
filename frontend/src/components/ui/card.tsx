@@ -8,7 +8,8 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg glass-card text-card-foreground",
+      "rounded-lg text-card-foreground",
+      className?.includes("neumorphic") ? "" : "glass-card",
       className
     )}
     {...props}
