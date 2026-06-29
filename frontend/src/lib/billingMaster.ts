@@ -1099,6 +1099,27 @@ export const PACKAGE_MASTER: PackageMaster[] = [
     ],
     duplicateBlockList: []
   },
+  {
+    id: "PKG-SPERM-VD",
+    name: "Sperm Cryopreservation — VD",
+    category: "Cryostorage / Oocyte / Sperm Cryopreservation",
+    fullPaymentAmount: 15000,
+    description: "Processing + storage included for VD patients.",
+    staffNote: "Sperm storage for VD positive patients.",
+    billingNote: "Sperm cryopreservation processing & storage (VD).",
+    inclusionsList: [
+      "Processing + storage included"
+    ],
+    exclusionsList: [
+      "Surgical sperm retrieval (TESA / PESA)",
+      "Donor sperm",
+      "Sperm transport to another clinic"
+    ],
+    lineItems: [
+      { id: "PKG-SPERM-VD-0", name: "Sperm wash & cryopreservation VD", price: 15000, category: "Storage", isOptional: false }
+    ],
+    duplicateBlockList: []
+  },
 
   // ── Embryo Pooling ─────────────────────────────────────────────────────────
 
@@ -1245,7 +1266,13 @@ export const ADDON_MASTER: AddOnItem[] = [
   { id: "ADD-SPERM-3M",      name: "Sperm cryopreservation – 3 months",                      price: 3000,  category: "Storage",    status: "Active" },
   { id: "ADD-SPERM-6M",      name: "Sperm cryopreservation – 6 months",                      price: 6000,  category: "Storage",    status: "Active" },
   { id: "ADD-SPERM-1Y",      name: "Long-term sperm cryopreservation – 1 year",              price: 10000, category: "Storage",    status: "Active" },
+  { id: "ADD-SPERM-VD",      name: "Sperm cryopreservation – VD",                            price: 15000, category: "Storage",    status: "Active" },
   { id: "ADD-EMBRYO-STORAGE", name: "Embryo cryostorage – 1 cryolock (included 1 yr in all ICSI packages)", price: 0, category: "Storage", status: "Active" },
+  
+  // Surgery HPE separate items
+  { id: "ADD-SURG-HPE-S",    name: "Surgery HPE - Small",                                     price: 1500,  category: "Procedure",  status: "Active" },
+  { id: "ADD-SURG-HPE-M",    name: "Surgery HPE - Mid",                                       price: 2000,  category: "Procedure",  status: "Active" },
+  { id: "ADD-SURG-HPE-B",    name: "Surgery HPE - Big",                                       price: 2500,  category: "Procedure",  status: "Active" },
 ]
 
 // ═════════════════════════════════════════════════════════════════════════════

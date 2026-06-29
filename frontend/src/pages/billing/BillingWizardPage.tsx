@@ -264,11 +264,12 @@ function getOtherItemsForPackage(pkgId: string, pkgCategory: string): OtherItem[
     ]
   }
   if (pkgId.startsWith("PKG-SPERM-")) {
+    const renewalPrice = pkgId === "PKG-SPERM-VD" ? 15000 : 10000;
     return [
       { name: "Surgical sperm retrieval (TESA / PESA)", note: "As applicable", price: 0 },
       { name: "Donor sperm", note: "Actual cost", price: 0 },
       { name: "Sperm transport to another clinic", note: "As applicable", price: 0 },
-      { name: "Renewal after Year 1", price: 10000, hasQty: true, qtyLabel: "years", unitText: "per year" }
+      { name: "Renewal after Year 1", price: renewalPrice, hasQty: true, qtyLabel: "years", unitText: "per year" }
     ]
   }
   if (pkgCategory === "Cryostorage / Oocyte / Sperm Cryopreservation" || pkgId === "PKG-CRYO-ADD") {

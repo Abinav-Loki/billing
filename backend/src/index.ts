@@ -95,6 +95,34 @@ const addOns = [
     category: "Add-ons / Separate Billing Items",
     price: 25000,
     status: "Active"
+  },
+  {
+    id: "ADD-003",
+    name: "Surgery HPE - Small",
+    category: "Add-ons / Separate Billing Items",
+    price: 1500,
+    status: "Active"
+  },
+  {
+    id: "ADD-004",
+    name: "Surgery HPE - Mid",
+    category: "Add-ons / Separate Billing Items",
+    price: 2000,
+    status: "Active"
+  },
+  {
+    id: "ADD-005",
+    name: "Surgery HPE - Big",
+    category: "Add-ons / Separate Billing Items",
+    price: 2500,
+    status: "Active"
+  },
+  {
+    id: "ADD-006",
+    name: "Sperm cryopreservation – VD",
+    category: "Add-ons / Separate Billing Items",
+    price: 15000,
+    status: "Active"
   }
 ]
 

@@ -291,7 +291,11 @@ export const mockAddOns: AddOn[] = [
   { id: "ADD-003", name: "Pre-implantation Genetic Screening (PGS) - Per Embryo", price: 30000, category: "Genetics", status: "Active" },
   { id: "ADD-004", name: "Specialized Embryo Glue", price: 10000, category: "Consumables", status: "Active" },
   { id: "ADD-005", name: "Anesthesia Charges (IV sedation)", price: 8000, category: "OT Charges", status: "Active" },
-  { id: "ADD-006", name: "Donor Semen Vial", price: 15000, category: "Donor Programme", status: "Active" }
+  { id: "ADD-006", name: "Donor Semen Vial", price: 15000, category: "Donor Programme", status: "Active" },
+  { id: "ADD-007", name: "Surgery HPE - Small", price: 1500, category: "Procedure", status: "Active" },
+  { id: "ADD-008", name: "Surgery HPE - Mid", price: 2000, category: "Procedure", status: "Active" },
+  { id: "ADD-009", name: "Surgery HPE - Big", price: 2500, category: "Procedure", status: "Active" },
+  { id: "ADD-010", name: "Sperm cryopreservation – VD", price: 15000, category: "Storage", status: "Active" }
 ]
 
 export const mockBills: Bill[] = [
