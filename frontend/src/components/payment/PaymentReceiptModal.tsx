@@ -73,8 +73,8 @@ export function PaymentReceiptModal({
             <div class="receipt-container">
               <div class="header">
                 <div class="hospital-title">ASCAS FERTILITY & WOMEN'S CENTER</div>
-                <div class="hospital-sub">No 15, Healthcare Colony, Landmark Crossroad, Chennai - 600001</div>
-                <div class="hospital-sub">GSTIN: 33ASCAS1234F1Z5 | Tel: +91 93425 21779</div>
+                <div class="hospital-sub">14,Arunachalam Rd, next to VB world, Saligramam, Chennai, Tamil Nadu 600093</div>
+                <div class="hospital-sub">Tel: +91-9345293609</div>
               </div>
               <div class="title">OFFICIAL PAYMENT RECEIPT</div>
               
@@ -100,6 +100,7 @@ export function PaymentReceiptModal({
  
               <div class="standing-box">
                 <div class="standing-row"><span>Total Bill Value (Subtotal):</span> <span>INR ${subtotal.toLocaleString("en-IN")}</span></div>
+                ${bill.totalConsultantCharges && bill.totalConsultantCharges > 0 ? `<div class="standing-row"><span>Consultant Charges:</span> <span>INR ${bill.totalConsultantCharges.toLocaleString("en-IN")}</span></div>` : ""}
                 ${bill.discount > 0 ? `<div class="standing-row" style="color: #10b981; font-weight: 600;"><span>Applied Discount / Concession:</span> <span>-INR ${bill.discount.toLocaleString("en-IN")}</span></div>` : ""}
                 <div class="standing-row"><span>Net Grand Total:</span> <span>INR ${bill.grandTotal.toLocaleString("en-IN")}</span></div>
                 <div class="standing-row"><span>Total Settled to Date:</span> <span>INR ${totalPaid.toLocaleString("en-IN")}</span></div>
@@ -149,7 +150,6 @@ export function PaymentReceiptModal({
           <div className="flex justify-between border-b pb-2">
             <div>
               <p className="font-bold text-slate-800 dark:text-slate-100">ASCAS FERTILITY & WOMEN'S CENTER</p>
-              <p className="text-[10px] text-muted-foreground">GSTIN: 33ASCAS1234F1Z5</p>
             </div>
             <div className="text-right">
               <p className="font-bold font-mono text-teal-600 dark:text-teal-400">{payment.receiptNo}</p>
@@ -235,6 +235,12 @@ export function PaymentReceiptModal({
             <span>Total Bill Value (Subtotal):</span>
             <span>{formatCurrency(subtotal)}</span>
           </div>
+          {bill.totalConsultantCharges && bill.totalConsultantCharges > 0 ? (
+            <div className="flex justify-between text-slate-500">
+              <span>Consultant Charges:</span>
+              <span>{formatCurrency(bill.totalConsultantCharges)}</span>
+            </div>
+          ) : null}
           {bill.discount > 0 && (
             <div className="flex justify-between text-emerald-600 font-semibold animate-fade-in">
               <span>Applied Discount / Concession:</span>

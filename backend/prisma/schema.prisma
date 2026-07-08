@@ -57,23 +57,28 @@ model AddOn {
 }
 
 model Bill {
-  id                String   @id @default(uuid())
-  billNo            String   @unique
-  patientId         String
-  patient           Patient  @relation(fields: [patientId], references: [id])
-  packageName       String
-  packagePrice      Float
-  addOns            Json     // Array of {name: string, price: number}
-  roomCharges       Float
-  additionalCharges Float
-  discount          Float
-  taxAmount         Float
-  grandTotal        Float
-  date              DateTime @default(now())
-  status            String   // Paid, Pending, Partially Paid
-  billingNotes      String?
-  doctorName        String
-  roomNo            String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                     String   @id @default(uuid())
+  billNo                 String   @unique
+  patientId              String
+  patient                Patient  @relation(fields: [patientId], references: [id])
+  packageName            String
+  packagePrice           Float
+  addOns                 Json     // Array of {name: string, price: number}
+  roomCharges            Float
+  additionalCharges      Float
+  discount               Float
+  taxAmount              Float
+  grandTotal             Float
+  date                   DateTime @default(now())
+  status                 String   // Paid, Pending, Partially Paid
+  billingNotes           String?
+  doctorName             String
+  roomNo                 String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  // Custom billing enhancements
+  consultantCharges      Json?
+  customLineItems        Json?
+  totalConsultantCharges Float?
+  isUnlockedByAdmin      Boolean? @default(false)
 }

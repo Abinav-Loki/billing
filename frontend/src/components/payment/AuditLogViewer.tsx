@@ -55,6 +55,10 @@ export function AuditLogViewer({
                       <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
                         log.actionType === "Discount"
                           ? "bg-teal-50 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400"
+                          : log.actionType === "Edit"
+                          ? "bg-indigo-50 dark:bg-indigo-950/20 text-indigo-750 dark:text-indigo-400"
+                          : log.actionType === "Unlock"
+                          ? "bg-amber-50 dark:bg-amber-950/20 text-amber-705 dark:text-amber-400"
                           : "bg-rose-55 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400"
                       }`}>
                         {log.actionType}
@@ -64,10 +68,20 @@ export function AuditLogViewer({
                       {log.createdBy}
                     </td>
                     <td className="px-5 py-3.5 text-slate-700 dark:text-slate-300 font-semibold">
-                      {log.authorizedBy}
+                      {log.authorizedBy || log.createdBy}
                     </td>
-                    <td className="px-5 py-3.5 text-slate-550 dark:text-slate-400 italic">
-                      "{log.authorizationRemarks}"
+                    <td className="px-5 py-3.5 text-slate-550 dark:text-slate-400">
+                      {log.actionType === "Edit" ? (
+                        <div className="space-y-1.5">
+                          <p className="font-semibold italic text-slate-700 dark:text-slate-300">Reason: "{log.reason}"</p>
+                          <div className="text-[10px] leading-snug space-y-0.5 border-t pt-1.5 mt-1 font-mono text-slate-500">
+                            <div><span className="font-bold text-slate-650">Prev:</span> {log.oldValue}</div>
+                            <div><span className="font-bold text-slate-650">Post:</span> {log.newValue}</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="italic">"{log.authorizationRemarks || log.reason || "N/A"}"</span>
+                      )}
                     </td>
                   </tr>
                 ))}

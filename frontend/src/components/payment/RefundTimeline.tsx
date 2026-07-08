@@ -64,8 +64,8 @@ export function RefundTimeline({
             <div class="receipt-container">
               <div class="header">
                 <div class="hospital-title">ASCAS FERTILITY & WOMEN'S CENTER</div>
-                <div class="hospital-sub">No 15, Healthcare Colony, Landmark Crossroad, Chennai - 600001</div>
-                <div class="hospital-sub">GSTIN: 33ASCAS1234F1Z5 | Tel: +91 93425 21779</div>
+                <div class="hospital-sub">14,Arunachalam Rd, next to VB world, Saligramam, Chennai, Tamil Nadu 600093</div>
+                <div class="hospital-sub">Tel: +91-9345293609</div>
               </div>
               <div class="title">OFFICIAL REFUND RECEIPT</div>
               

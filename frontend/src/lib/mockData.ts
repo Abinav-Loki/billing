@@ -98,13 +98,16 @@ export interface RefundEntry {
 
 export interface AuditLogEntry {
   id: string
-  actionType: "Discount" | "Refund"
+  actionType: "Discount" | "Refund" | "Edit" | "Unlock"
   createdBy: string
   createdAt: string
   updatedBy?: string
   updatedAt?: string
-  authorizedBy: string
-  authorizationRemarks: string
+  authorizedBy?: string
+  authorizationRemarks?: string
+  reason?: string
+  oldValue?: string
+  newValue?: string
 }
 
 export interface Bill {
@@ -136,6 +139,11 @@ export interface Bill {
   discountDetails?: DiscountDetails
   refunds?: RefundEntry[]
   auditLogs?: AuditLogEntry[]
+  // Custom bill enhancements
+  consultantCharges?: { doctorName: string; type: string; amount: number; remarks?: string }[]
+  customLineItems?: { category: string; name: string; description: string; qty: number; price: number; discount: number; gstRate: number; total: number }[]
+  totalConsultantCharges?: number
+  isUnlockedByAdmin?: boolean
 }
 
 export interface User {

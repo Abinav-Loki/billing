@@ -46,8 +46,8 @@ export function generateBillPDF(bill: Bill) {
   doc.setFont("Helvetica", "normal")
   doc.setFontSize(8.5)
   doc.setTextColor(100, 116, 139) // Slate gray
-  doc.text("No 15, Healthcare Colony, Landmark Crossroad, Chennai - 600001", pageWidth / 2, 23, { align: "center" })
-  doc.text("GSTIN: 33ASCAS1234F1Z5  |  Tel: +91 93425 21779  |  Email: ascas@ascasfertility.in", pageWidth / 2, 27, { align: "center" })
+  doc.text("14,Arunachalam Rd, next to VB world, Saligramam, Chennai, Tamil Nadu 600093", pageWidth / 2, 23, { align: "center" })
+  doc.text("Tel: +91-9345293609  |  Email: accumedspecialityclinic@gmail.com", pageWidth / 2, 27, { align: "center" })
 
   // Decorative dual lines
   doc.setDrawColor(15, 118, 110)
@@ -121,7 +121,23 @@ export function generateBillPDF(bill: Bill) {
   let index = 1
 
   // Determine what to display based on billing method
-  if (bill.billingMethod === "item_wise" && bill.selectedLineItems && bill.selectedLineItems.length > 0) {
+  const isCustom = bill.packageName === "Custom Bill"
+  if (isCustom && bill.customLineItems && bill.customLineItems.length > 0) {
+    bill.customLineItems.forEach((item) => {
+      let desc = item.name
+      if (item.description) desc += ` (${item.description})`
+      if (item.discount > 0) desc += ` [Row Disc: -${formatINR(item.discount)}]`
+      if (item.gstRate > 0) desc += ` [GST: ${item.gstRate}%]`
+      tableRows.push([
+        index++,
+        desc,
+        item.category,
+        item.qty,
+        formatINR(item.price),
+        formatINR(item.total)
+      ])
+    })
+  } else if (bill.billingMethod === "item_wise" && bill.selectedLineItems && bill.selectedLineItems.length > 0) {
     // List item-wise details
     bill.selectedLineItems.forEach((item) => {
       tableRows.push([
@@ -158,16 +174,18 @@ export function generateBillPDF(bill: Bill) {
   }
 
   // Add-ons
-  bill.addOns.forEach((addon) => {
-    tableRows.push([
-      index++,
-      addon.name,
-      "Separate Add-on",
-      1,
-      formatINR(addon.price),
-      formatINR(addon.price)
-    ])
-  })
+  if (bill.addOns) {
+    bill.addOns.forEach((addon) => {
+      tableRows.push([
+        index++,
+        addon.name,
+        "Separate Add-on",
+        1,
+        formatINR(addon.price),
+        formatINR(addon.price)
+      ])
+    })
+  }
 
   // Additional Consumables / Misc Charges
   if (bill.additionalCharges > 0) {
@@ -179,6 +197,20 @@ export function generateBillPDF(bill: Bill) {
       formatINR(bill.additionalCharges),
       formatINR(bill.additionalCharges)
     ])
+  }
+
+  // Consultant Charges
+  if (bill.consultantCharges && bill.consultantCharges.length > 0) {
+    bill.consultantCharges.forEach((charge) => {
+      tableRows.push([
+        index++,
+        `${charge.doctorName} (${charge.type})${charge.remarks ? ` - ${charge.remarks}` : ""}`,
+        "Consultant Fee",
+        1,
+        formatINR(charge.amount),
+        formatINR(charge.amount)
+      ])
+    })
   }
 
   autoTable(doc, {
@@ -218,7 +250,9 @@ export function generateBillPDF(bill: Bill) {
 
   // ── 5. TOTALS BLOCK ───────────────────────────────────────────────
   const finalTableY = (doc as any).lastAutoTable.finalY + 5
-  const subtotal = bill.packagePrice + bill.addOns.reduce((sum, a) => sum + a.price, 0) + bill.roomCharges + bill.additionalCharges
+  const subtotal = bill.packageName === "Custom Bill" && bill.customLineItems
+    ? bill.customLineItems.reduce((sum, item) => sum + item.qty * item.price, 0)
+    : (bill.packagePrice + bill.addOns.reduce((sum, a) => sum + a.price, 0) + bill.roomCharges)
   
   const totalsX = pageWidth - 90
   let totalsY = finalTableY
@@ -231,6 +265,24 @@ export function generateBillPDF(bill: Bill) {
   doc.setTextColor(15, 23, 42)
   doc.text(formatINR(subtotal), pageWidth - 15, totalsY, { align: "right" })
   totalsY += 4.5
+
+  // Print Additional Charges (if applicable)
+  if (bill.additionalCharges && bill.additionalCharges > 0) {
+    doc.setTextColor(100, 116, 139)
+    doc.text("Additional Charges:", totalsX, totalsY)
+    doc.setTextColor(15, 23, 42)
+    doc.text(formatINR(bill.additionalCharges), pageWidth - 15, totalsY, { align: "right" })
+    totalsY += 4.5
+  }
+
+  // Print Consultant Charges (if applicable)
+  if (bill.totalConsultantCharges && bill.totalConsultantCharges > 0) {
+    doc.setTextColor(100, 116, 139)
+    doc.text("Consultant Charges:", totalsX, totalsY)
+    doc.setTextColor(15, 23, 42)
+    doc.text(formatINR(bill.totalConsultantCharges), pageWidth - 15, totalsY, { align: "right" })
+    totalsY += 4.5
+  }
 
   // Print Tax (if applicable)
   if (bill.taxAmount > 0) {

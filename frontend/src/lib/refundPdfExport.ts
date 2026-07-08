@@ -39,8 +39,8 @@ export function generateRefundPDF(bill: Bill, refund: RefundEntry) {
   doc.setFont("Helvetica", "normal")
   doc.setFontSize(8.5)
   doc.setTextColor(100, 116, 139) // Slate gray
-  doc.text("No 15, Healthcare Colony, Landmark Crossroad, Chennai - 600001", pageWidth / 2, 23, { align: "center" })
-  doc.text("GSTIN: 33ASCAS1234F1Z5  |  Tel: +91 93425 21779  |  Email: ascas@ascasfertility.in", pageWidth / 2, 27, { align: "center" })
+  doc.text("14,Arunachalam Rd, next to VB world, Saligramam, Chennai, Tamil Nadu 600093", pageWidth / 2, 23, { align: "center" })
+  doc.text("Tel: +91-9345293609  |  Email: accumedspecialityclinic@gmail.com", pageWidth / 2, 27, { align: "center" })
 
   // Decorative dual lines
   doc.setDrawColor(15, 118, 110)

@@ -39,8 +39,8 @@ export function generateReceiptPDF(bill: Bill, entry: PaymentEntry) {
   doc.setFont("Helvetica", "normal")
   doc.setFontSize(8.5)
   doc.setTextColor(100, 116, 139) // Slate gray
-  doc.text("No 15, Healthcare Colony, Landmark Crossroad, Chennai - 600001", pageWidth / 2, 23, { align: "center" })
-  doc.text("GSTIN: 33ASCAS1234F1Z5  |  Tel: +91 93425 21779  |  Email: ascas@ascasfertility.in", pageWidth / 2, 27, { align: "center" })
+  doc.text("14,Arunachalam Rd, next to VB world, Saligramam, Chennai, Tamil Nadu 600093", pageWidth / 2, 23, { align: "center" })
+  doc.text("Tel: +91-9345293609  |  Email: accumedspecialityclinic@gmail.com", pageWidth / 2, 27, { align: "center" })
 
   // Decorative dual lines
   doc.setDrawColor(15, 118, 110)
@@ -185,6 +185,16 @@ export function generateReceiptPDF(bill: Bill, entry: PaymentEntry) {
   doc.setTextColor(15, 23, 42)
   doc.text(formatINR(subtotal), 75, currentY)
   
+  if (bill.totalConsultantCharges && bill.totalConsultantCharges > 0) {
+    currentY += 5
+    doc.setFont("Helvetica", "normal")
+    doc.setTextColor(100, 116, 139)
+    doc.text("Consultant Charges:", 20, currentY)
+    doc.setFont("Helvetica", "bold")
+    doc.setTextColor(15, 23, 42)
+    doc.text(formatINR(bill.totalConsultantCharges), 75, currentY)
+  }
+
   if (showDiscount) {
     currentY += 5
     doc.setFont("Helvetica", "normal")
@@ -211,7 +221,7 @@ export function generateReceiptPDF(bill: Bill, entry: PaymentEntry) {
   doc.text(formatINR(totalPaid), 75, currentY)
 
   // Balance due on the right
-  const balY = afterDetailsY + (showDiscount ? 20 : 15)
+  const balY = afterDetailsY + 15 + (showDiscount ? 5 : 0) + (bill.totalConsultantCharges && bill.totalConsultantCharges > 0 ? 5 : 0)
   doc.setFont("Helvetica", "bold")
   doc.setTextColor(100, 116, 139)
   doc.text("Outstanding Balance:", pageWidth - 85, balY)

@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card"
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../../components/ui/table"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Badge } from "../../components/ui/badge"
@@ -278,6 +279,97 @@ function getOtherItemsForPackage(pkgId: string, pkgCategory: string): OtherItem[
   return []
 }
 
+const SERVICE_CATEGORIES = [
+  "Consultation",
+  "Ultrasound Scan",
+  "Laboratory",
+  "Pharmacy",
+  "Injection",
+  "Procedure",
+  "Embryology",
+  "IUI",
+  "IVF",
+  "ICSI",
+  "OPU",
+  "Embryo Transfer",
+  "Cryostorage",
+  "Oocyte Vitrification",
+  "Sperm Freezing",
+  "Surgical Procedure",
+  "Room Charges",
+  "Nursing Charges",
+  "Anaesthesia",
+  "OT Charges",
+  "Consumables",
+  "Admission Charges",
+  "Registration Charges",
+  "Miscellaneous"
+]
+
+const SERVICE_MASTER: Record<string, string[]> = {
+  "Consultation": [
+    "Initial Consultation",
+    "Follow-up Consultation",
+    "Senior Consultant Consultation"
+  ],
+  "Laboratory": [
+    "AMH",
+    "CBC",
+    "Blood Sugar",
+    "TSH",
+    "HIV",
+    "HBsAg",
+    "HCV",
+    "VDRL"
+  ],
+  "Ultrasound Scan": [
+    "TVS Scan",
+    "Follicular Scan",
+    "Pelvic Scan"
+  ],
+  "Procedure": [
+    "OPU",
+    "Embryo Transfer",
+    "ICSI",
+    "IUI",
+    "Blastocyst Culture",
+    "Embryo Freezing"
+  ],
+  "Cryostorage": [
+    "Embryo Storage",
+    "Sperm Storage",
+    "Egg Freezing"
+  ],
+  "Consumables": [
+    "Catheter",
+    "Culture Media",
+    "Needles",
+    "Cannula",
+    "Syringes"
+  ]
+}
+
+function getDefaultServicePrice(srvName: string): number {
+  const name = srvName.toLowerCase()
+  if (name.includes("initial consultation")) return 500
+  if (name.includes("follow-up consultation")) return 300
+  if (name.includes("senior consultant")) return 1000
+  if (name.includes("amh")) return 2500
+  if (name.includes("cbc")) return 350
+  if (name.includes("blood sugar")) return 150
+  if (name.includes("tsh")) return 450
+  if (name.includes("tvs scan")) return 1200
+  if (name.includes("follicular scan")) return 800
+  if (name.includes("pelvic scan")) return 1500
+  if (name.includes("opu")) return 50000
+  if (name.includes("embryo transfer")) return 35000
+  if (name.includes("icsi")) return 40000
+  if (name.includes("iui")) return 10000
+  if (name.includes("blastocyst culture")) return 20000
+  if (name.includes("embryo freezing")) return 25000
+  return 0
+}
+
 export function BillingWizardPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -304,6 +396,12 @@ export function BillingWizardPage() {
   const [selectedAddOns, setSelectedAddOns] = React.useState<{ addon: AddOnItem; qty: number }[]>([])
   const [exclusions, setExclusions] = React.useState<string[]>([])
   const [newExclusionText, setNewExclusionText] = React.useState("")
+
+  // Custom Bill Builder states
+  const [customServices, setCustomServices] = React.useState<any[]>([
+    { category: "Consultation", name: "", description: "", qty: 1, price: 0, discount: 0, gstRate: 0, total: 0 }
+  ])
+  const [consultantCharges, setConsultantCharges] = React.useState<any[]>([])
 
   // Parse query parameters from packages page redirect
   React.useEffect(() => {
@@ -341,37 +439,41 @@ export function BillingWizardPage() {
   const [addonSearch, setAddonSearch] = React.useState("")
   const [isAddonSectionOpen, setIsAddonSectionOpen] = React.useState(true)
 
-  // Discount state
+  // Step 3: Billing Format state (detailed, inline)
+  const [billingFormat, setBillingFormat] = React.useState<"inline" | "detailed">("detailed")
+
+  // Step 4: Preview states
   const [discount, setDiscount] = React.useState<number>(0)
   const [discountNote, setDiscountNote] = React.useState("")
+  const [additionalCharges, setAdditionalCharges] = React.useState<number>(0)
 
-  // Step 3: Billing format choice state
-  const [billingFormat, setBillingFormat] = React.useState<"inline" | "detailed">("inline")
-
-  // Payment capture state (Step 4.5 — between preview and success)
+  // Step 4.5: Payment recording modal values
+  const [paymentEntries, setPaymentEntries] = React.useState<any[]>([])
+  const [paymentStep, setPaymentStep] = React.useState<"enter" | "list">("enter")
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>("Cash")
+  const [payType, setPayType] = React.useState<PaymentType>("Full Payment")
   const [amountPaid, setAmountPaid] = React.useState<number>(0)
   const [transactionId, setTransactionId] = React.useState("")
   const [paymentNote, setPaymentNote] = React.useState("")
-  const [paymentEntries, setPaymentEntries] = React.useState<PaymentEntry[]>([])
-  const [paymentStep, setPaymentStep] = React.useState<"enter" | "done">("enter")
+  
+  // Method-specific details
+  const [bankName, setBankName] = React.useState("")
+  const [last4Digits, setLast4Digits] = React.useState("")
+  const [chequeDate, setChequeDate] = React.useState("")
 
-  // State to track detailed exclusions/add-ons checked, their quantities and custom prices
-  const [detailedSelections, setDetailedSelections] = React.useState<Record<string, { checked: boolean, qty: number, price?: number }>>({})
+  // Details options checks (Step 4 Detailed format selection mappings)
+  const [detailedSelections, setDetailedSelections] = React.useState<Record<string, { checked: boolean, qty: number, price: number }>>({})
 
-  // Initialize detailed selections when selected package changes
-  // NOTE: Exclusions are NOT pre-loaded from the package defaults —
-  //        they only appear when manually added by the user in Step 2.
+  // Reset detailed selections when package changes
   React.useEffect(() => {
     if (selectedPackage) {
-      setExclusions([]) // Always start empty — user adds their own
-
-      const items = getOtherItemsForPackage(selectedPackage.id, selectedPackage.category)
-      const initial: Record<string, { checked: boolean, qty: number, price?: number }> = {}
-      items.forEach(item => {
-        initial[item.name] = { checked: false, qty: 1, price: item.price }
+      const defaults: Record<string, { checked: boolean, qty: number, price: number }> = {}
+      const detailedItems = getOtherItemsForPackage(selectedPackage.id, selectedPackage.category)
+      detailedItems.forEach(item => {
+        defaults[item.name] = { checked: false, qty: 1, price: item.price || 0 }
       })
-      setDetailedSelections(initial)
+      setDetailedSelections(defaults)
+      setExclusions(selectedPackage.exclusionsList || [])
     } else {
       setExclusions([])
       setDetailedSelections({})
@@ -386,6 +488,60 @@ export function BillingWizardPage() {
 
   const handleRemoveExclusion = (index: number) => {
     setExclusions(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Custom Service Row Handlers
+  const handleAddServiceRow = () => {
+    setCustomServices([
+      ...customServices,
+      { category: "Consultation", name: "", description: "", qty: 1, price: 0, discount: 0, gstRate: 0, total: 0 }
+    ])
+  }
+
+  const handleRemoveServiceRow = (index: number) => {
+    const updated = [...customServices]
+    updated.splice(index, 1)
+    setCustomServices(updated.length > 0 ? updated : [
+      { category: "Consultation", name: "", description: "", qty: 1, price: 0, discount: 0, gstRate: 0, total: 0 }
+    ])
+  }
+
+  const handleDuplicateServiceRow = (index: number) => {
+    const rowToCopy = customServices[index]
+    const updated = [...customServices]
+    updated.splice(index + 1, 0, { ...rowToCopy })
+    setCustomServices(updated)
+  }
+
+  const handleMoveServiceRow = (index: number, direction: "up" | "down") => {
+    const updated = [...customServices]
+    if (direction === "up" && index > 0) {
+      const temp = updated[index]
+      updated[index] = updated[index - 1]
+      updated[index - 1] = temp
+    } else if (direction === "down" && index < updated.length - 1) {
+      const temp = updated[index]
+      updated[index] = updated[index + 1]
+      updated[index + 1] = temp
+    }
+    setCustomServices(updated)
+  }
+
+  const handleUpdateServiceRow = (index: number, field: string, value: any) => {
+    const updated = [...customServices]
+    const row = { ...updated[index], [field]: value }
+    
+    // Recalculate row total
+    const qty = row.qty >= 1 ? row.qty : 1
+    const price = row.price >= 0 ? row.price : 0
+    const rowDiscount = row.discount >= 0 ? row.discount : 0
+    const base = qty * price
+    const afterDiscount = Math.max(0, base - rowDiscount)
+    const gstAmount = afterDiscount * (row.gstRate / 100)
+    row.total = Math.max(0, afterDiscount + gstAmount)
+    
+    updated[index] = row
+    setCustomServices(updated)
   }
 
   // Generate unique auto-incremented Bill No based on mockBills length on load
@@ -412,10 +568,14 @@ export function BillingWizardPage() {
   }
 
   // Calculations
+  const isCustomBill = selectedPackage?.id === "PKG-CUSTOM-BILL"
+
   const packageAmount = selectedPackage ? selectedPackage.fullPaymentAmount : 0
   
   // Calculate detailed exclusions/add-ons list and total
-  const detailedItemsList = selectedPackage ? getOtherItemsForPackage(selectedPackage.id, selectedPackage.category) : []
+  const detailedItemsList = selectedPackage && selectedPackage.id !== "PKG-CUSTOM-BILL"
+    ? getOtherItemsForPackage(selectedPackage.id, selectedPackage.category)
+    : []
   const detailedItemsTotal = detailedItemsList.reduce((sum, item) => {
     const sel = detailedSelections[item.name]
     if (sel && sel.checked) {
@@ -428,8 +588,28 @@ export function BillingWizardPage() {
   const addOnsTotal = (billingFormat === "detailed" ? detailedItemsTotal : 0) +
     selectedAddOns.reduce((sum, item) => sum + item.addon.price * item.qty, 0)
 
-  const subtotal = packageAmount + addOnsTotal
-  const grandTotal = Math.max(0, subtotal - discount)
+  const subtotal = isCustomBill
+    ? customServices.reduce((sum, row) => sum + row.qty * row.price, 0)
+    : (packageAmount + addOnsTotal)
+
+  const totalConsultantCharges = consultantCharges.reduce((sum, item) => sum + item.amount, 0)
+
+  const itemDiscountTotal = isCustomBill
+    ? customServices.reduce((sum, item) => sum + item.discount, 0)
+    : 0
+
+  const itemGstTotal = isCustomBill
+    ? customServices.reduce((sum, item) => {
+        const base = item.qty * item.price
+        const discounted = Math.max(0, base - item.discount)
+        return sum + (discounted * (item.gstRate / 100))
+      }, 0)
+    : 0
+
+  const totalDiscount = itemDiscountTotal + discount
+  const totalGst = itemGstTotal
+
+  const grandTotal = Math.max(0, subtotal + totalConsultantCharges + additionalCharges - totalDiscount + totalGst)
 
   // Navigation handlers
   const handleNextStep1 = (e: React.FormEvent) => {
@@ -446,7 +626,40 @@ export function BillingWizardPage() {
       alert("Please select a primary package.")
       return
     }
-    setStep(3)
+    if (selectedPackage.id === "PKG-CUSTOM-BILL") {
+      // Validate Custom Services
+      if (customServices.length === 0) {
+        alert("Please add at least one service row.")
+        return
+      }
+      for (let i = 0; i < customServices.length; i++) {
+        const row = customServices[i]
+        if (!row.category) {
+          alert(`Row ${i + 1}: Category is mandatory.`)
+          return
+        }
+        if (!row.name.trim()) {
+          alert(`Row ${i + 1}: Service Name is mandatory.`)
+          return
+        }
+        if (row.qty <= 0) {
+          alert(`Row ${i + 1}: Quantity cannot be zero.`)
+          return
+        }
+        if (row.price < 0) {
+          alert(`Row ${i + 1}: Price cannot be negative.`)
+          return
+        }
+        if (row.total < 0) {
+          alert(`Row ${i + 1}: Total cannot become negative.`)
+          return
+        }
+      }
+      setBillingFormat("inline") // default format for custom bill preview
+      setStep(4)
+    } else {
+      setStep(3)
+    }
   }
 
   const handleSelectFormat = (format: "inline" | "detailed") => {
@@ -548,9 +761,9 @@ export function BillingWizardPage() {
       packagePrice: packageAmount,
       addOns: generatedAddOns,
       roomCharges: 0,
-      additionalCharges: 0,
+      additionalCharges: additionalCharges,
       discount,
-      taxAmount: 0,
+      taxAmount: totalGst,
       grandTotal,
       date: billDate,
       status: computedStatus,
@@ -559,6 +772,9 @@ export function BillingWizardPage() {
       billingMethod: "full_payment",
       billingFormat: billingFormat,
       exclusions: generatedExclusions,
+      customLineItems: isCustomBill ? customServices : undefined,
+      consultantCharges: consultantCharges,
+      totalConsultantCharges: totalConsultantCharges,
       payments: paymentEntries.map((e, index) => {
         const year = new Date().getFullYear()
         let totalExistingPayments = 0
@@ -601,6 +817,11 @@ export function BillingWizardPage() {
     setSelectedAddOns([])
     setDiscount(0)
     setDiscountNote("")
+    setAdditionalCharges(0)
+    setCustomServices([
+      { category: "Consultation", name: "", description: "", qty: 1, price: 0, discount: 0, gstRate: 0, total: 0 }
+    ])
+    setConsultantCharges([])
     setExclusions([])
     setNewExclusionText("")
     setPaymentMethod("Cash")
@@ -709,7 +930,7 @@ export function BillingWizardPage() {
             margin: 0 !important;
             padding: 8px !important;
             min-height: 0 !important;
-            zoom: 0.72 !important;
+            zoom: 1.0 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -905,7 +1126,49 @@ export function BillingWizardPage() {
           
           {/* Left: Package Selection (8 columns) */}
           <div className="lg:col-span-8 space-y-6">
-            <Card className="glass-panel border-slate-200 shadow-lg">
+            
+            {/* Tab switcher at the top of Step 2 Left Panel */}
+            <div className="flex gap-2 border-b pb-1">
+              <button
+                onClick={() => {
+                  if (selectedPackage?.id === "PKG-CUSTOM-BILL") {
+                    setSelectedPackage(null)
+                  }
+                }}
+                className={`flex items-center gap-2 px-4 py-2 text-xs font-bold transition-all border-b-2 ${
+                  selectedPackage?.id !== "PKG-CUSTOM-BILL"
+                    ? "border-primary text-primary font-bold"
+                    : "border-transparent text-muted-foreground hover:text-slate-800"
+                }`}
+              >
+                <span>📦</span> Predefined Packages
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedPackage({
+                    id: "PKG-CUSTOM-BILL",
+                    name: "Custom Bill",
+                    category: "Charity Packages" as any,
+                    fullPaymentAmount: 0,
+                    description: "Create a custom itemized bill with custom services and procedures.",
+                    inclusionsList: [],
+                    exclusionsList: [],
+                    policiesList: [],
+                    lineItems: []
+                  })
+                }}
+                className={`flex items-center gap-2 px-4 py-2 text-xs font-bold transition-all border-b-2 ${
+                  selectedPackage?.id === "PKG-CUSTOM-BILL"
+                    ? "border-primary text-primary font-bold"
+                    : "border-transparent text-muted-foreground hover:text-slate-800"
+                }`}
+              >
+                <span>🛠️</span> Custom Bill Builder
+              </button>
+            </div>
+
+            {selectedPackage?.id !== "PKG-CUSTOM-BILL" && (
+              <Card className="glass-panel border-slate-200 shadow-lg">
               <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-800 dark:text-slate-100">
                   <Package className="h-5 w-5 text-primary" />
@@ -982,6 +1245,45 @@ export function BillingWizardPage() {
                       </div>
                     )
                   })}
+                  
+                  {/* Custom Bill Card */}
+                  {(() => {
+                    const isSelected = selectedPackage?.id === "PKG-CUSTOM-BILL"
+                    return (
+                      <div
+                        onClick={() => setSelectedPackage({
+                          id: "PKG-CUSTOM-BILL",
+                          name: "Custom Bill",
+                          category: "Charity Packages" as any,
+                          fullPaymentAmount: 0,
+                          description: "Create a custom itemized bill with custom services and procedures.",
+                          inclusionsList: [],
+                          exclusionsList: [],
+                          policiesList: [],
+                          lineItems: []
+                        })}
+                        className={`p-4 rounded-xl border-2 text-left cursor-pointer transition-all hover:shadow-md ${
+                          isSelected
+                            ? "border-primary bg-primary/5 dark:bg-primary/10 shadow"
+                            : "border-slate-200 dark:border-slate-800 hover:border-primary/45"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-snug">➕ Custom Bill</h4>
+                          <span className="font-extrabold text-primary shrink-0">{formatCurrency(0)}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-1.5 line-clamp-2">
+                          Create a custom itemized bill with custom services and procedures.
+                        </p>
+                        {isSelected && (
+                          <div className="flex items-center gap-1.5 mt-2.5 text-primary text-xs font-bold">
+                            <Check className="h-4 w-4 stroke-[3]" /> Selected
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
+
                   {filteredPackages.length === 0 && (
                     <div className="col-span-2 text-center py-10 text-muted-foreground text-xs font-semibold">
                       No packages found in this category.
@@ -990,9 +1292,11 @@ export function BillingWizardPage() {
                 </div>
               </CardContent>
             </Card>
+            )}
 
             {/* Add-ons list */}
-            <Card className="glass-panel border-slate-200 shadow-lg">
+            {!isCustomBill && (
+              <Card className="glass-panel border-slate-200 shadow-lg">
               <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b px-5 py-3.5 flex flex-row items-center justify-between">
                 <button
                   onClick={() => setIsAddonSectionOpen(!isAddonSectionOpen)}
@@ -1063,10 +1367,11 @@ export function BillingWizardPage() {
                   </div>
                 </CardContent>
               )}
-            </Card>
+              </Card>
+            )}
 
             {/* Exclusions Management Card */}
-            {selectedPackage && (
+            {selectedPackage && !isCustomBill && (
               <Card className="glass-panel border-slate-200 shadow-lg">
                 <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b px-5 py-3.5 flex flex-row items-center justify-between">
                   <div className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
@@ -1127,10 +1432,322 @@ export function BillingWizardPage() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Custom Bill Builder Card */}
+            {isCustomBill && (
+              <Card className="glass-panel border-slate-200 shadow-lg animate-fade-in">
+                <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b p-5 flex justify-between items-center">
+                  <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                    <span>🛠️</span> Custom Bill Builder
+                  </CardTitle>
+                  <Button
+                    onClick={handleAddServiceRow}
+                    size="sm"
+                    className="text-xs gap-1.5 bg-primary text-white font-bold"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add Service Row
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-5 space-y-4">
+                  <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950">
+                    <Table className="min-w-[900px]">
+                      <TableHeader className="bg-slate-50/60 dark:bg-slate-900/40 border-b">
+                        <TableRow>
+                          <TableHead className="w-10 text-center font-bold text-xs">#</TableHead>
+                          <TableHead className="w-40 font-bold text-xs">Category</TableHead>
+                          <TableHead className="w-56 font-bold text-xs">Service Name</TableHead>
+                          <TableHead className="w-40 font-bold text-xs">Description</TableHead>
+                          <TableHead className="w-16 font-bold text-xs text-center">Qty</TableHead>
+                          <TableHead className="w-24 font-bold text-xs text-right">Unit Price (₹)</TableHead>
+                          <TableHead className="w-20 font-bold text-xs text-right">Discount (₹)</TableHead>
+                          <TableHead className="w-24 font-bold text-xs text-center">GST Rate</TableHead>
+                          <TableHead className="w-28 font-bold text-xs text-right">Row Total (₹)</TableHead>
+                          <TableHead className="w-28 font-bold text-xs text-center">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {customServices.map((row, index) => {
+                          return (
+                            <TableRow key={index} className="hover:bg-slate-50/20 dark:hover:bg-slate-900/10">
+                              <TableCell className="text-center font-mono text-[11px] text-muted-foreground">{index + 1}</TableCell>
+                              <TableCell>
+                                <select
+                                  value={row.category}
+                                  onChange={e => handleUpdateServiceRow(index, "category", e.target.value)}
+                                  className="w-full h-8 border rounded px-1.5 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary"
+                                >
+                                  {SERVICE_CATEGORIES.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                  ))}
+                                </select>
+                              </TableCell>
+                              <TableCell>
+                                <div className="relative">
+                                  <input
+                                    type="text"
+                                    list={`service-names-list-${index}`}
+                                    placeholder="Type or select service..."
+                                    value={row.name}
+                                    onChange={e => {
+                                      const val = e.target.value
+                                      handleUpdateServiceRow(index, "name", val)
+                                      // Auto-fill price if matched in SERVICE_MASTER
+                                      const categoryList = SERVICE_MASTER[row.category] || []
+                                      const matched = categoryList.find(n => n.toLowerCase() === val.toLowerCase())
+                                      if (matched) {
+                                        const defaultPrice = getDefaultServicePrice(matched)
+                                        handleUpdateServiceRow(index, "price", defaultPrice)
+                                      }
+                                    }}
+                                    className="w-full h-8 border rounded px-2.5 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                                  />
+                                  <datalist id={`service-names-list-${index}`}>
+                                    {(SERVICE_MASTER[row.category] || []).map(name => (
+                                      <option key={name} value={name} />
+                                    ))}
+                                  </datalist>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <input
+                                  type="text"
+                                  placeholder="Notes..."
+                                  value={row.description}
+                                  onChange={e => handleUpdateServiceRow(index, "description", e.target.value)}
+                                  className="w-full h-8 border rounded px-2 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={row.qty}
+                                  onChange={e => handleUpdateServiceRow(index, "qty", Math.max(1, Number(e.target.value) || 1))}
+                                  className="w-full h-8 border rounded text-center text-xs font-bold bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={row.price || ""}
+                                  placeholder="0"
+                                  onChange={e => handleUpdateServiceRow(index, "price", Math.max(0, Number(e.target.value) || 0))}
+                                  className="w-full h-8 border rounded text-right px-2 text-xs font-mono font-bold bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={row.discount || ""}
+                                  placeholder="0"
+                                  onChange={e => handleUpdateServiceRow(index, "discount", Math.max(0, Number(e.target.value) || 0))}
+                                  className="w-full h-8 border rounded text-right px-2 text-xs font-mono font-bold bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary text-emerald-600 dark:text-emerald-450"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={100}
+                                  placeholder="0"
+                                  value={row.gstRate}
+                                  onChange={e => handleUpdateServiceRow(index, "gstRate", Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                                  className="w-full h-8 border rounded text-center text-xs font-bold bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                                />
+                              </TableCell>
+                              <TableCell className="text-right font-mono font-bold text-primary text-xs pr-4">
+                                {formatCurrency(row.total || 0)}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveServiceRow(index, "up")}
+                                    disabled={index === 0}
+                                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-850 rounded disabled:opacity-30 text-[10px]"
+                                    title="Move Up"
+                                  >
+                                    ▲
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveServiceRow(index, "down")}
+                                    disabled={index === customServices.length - 1}
+                                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-850 rounded disabled:opacity-30 text-[10px]"
+                                    title="Move Down"
+                                  >
+                                    ▼
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDuplicateServiceRow(index)}
+                                    className="p-1 text-teal-650 hover:bg-teal-50 dark:hover:bg-teal-950/20 rounded text-xs"
+                                    title="Duplicate Row"
+                                  >
+                                    ⧉
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveServiceRow(index)}
+                                    className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/25 rounded hover:bg-rose-100 transition-colors"
+                                    title="Delete Row"
+                                  >
+                                    <Trash className="h-3 w-3" />
+                                    <span>Delete</span>
+                                  </button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      variant="outline"
+                      onClick={handleAddServiceRow}
+                      size="sm"
+                      className="text-xs gap-1 h-8"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Add Row
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Right: Summary panel (4 columns) */}
           <div className="lg:col-span-4 space-y-6">
+            
+            {/* Consultant Charges Section */}
+            <Card className="glass-panel border-slate-200 shadow-lg">
+              <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b p-4">
+                <CardTitle className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <User className="h-4 w-4 text-teal-600" />
+                    Consultant Charges
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      setConsultantCharges(prev => [
+                        ...prev,
+                        { doctorName: "Dr. Anjali Mehta", type: "Initial Consultation", amount: 500, remarks: "" }
+                      ])
+                    }}
+                    className="text-[10px] h-7 gap-1 border-teal-200 text-teal-750 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/20 dark:text-teal-400 px-2"
+                  >
+                    <Plus className="h-3 w-3" /> Add
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-3">
+                {consultantCharges.map((charge, idx) => (
+                  <div key={idx} className="p-3 border rounded-lg bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 space-y-2 relative">
+                    <div className="flex justify-between items-center border-b pb-1.5">
+                      <span className="text-[10px] font-bold text-teal-600 dark:text-teal-400">Consultant #{idx + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = [...consultantCharges]
+                          updated.splice(idx, 1)
+                          setConsultantCharges(updated)
+                        }}
+                        className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 p-1 rounded transition-all shrink-0"
+                        title="Remove Consultant"
+                      >
+                        <Trash className="h-3 w-3" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Doctor Name *</label>
+                        <input
+                          type="text"
+                          list="doctors-list"
+                          placeholder="Doctor name"
+                          value={charge.doctorName}
+                          onChange={e => {
+                            const updated = [...consultantCharges]
+                            updated[idx].doctorName = e.target.value
+                            setConsultantCharges(updated)
+                          }}
+                          className="w-full h-8 border rounded px-2 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Type *</label>
+                        <select
+                          value={charge.type}
+                          onChange={e => {
+                            const updated = [...consultantCharges]
+                            updated[idx].type = e.target.value
+                            const defaultAmt = e.target.value === "Initial Consultation" ? 500 : e.target.value === "Follow-up" ? 300 : e.target.value === "Emergency" ? 1500 : 500
+                            if (updated[idx].amount === 0 || updated[idx].amount === 500 || updated[idx].amount === 300) {
+                              updated[idx].amount = defaultAmt
+                            }
+                            setConsultantCharges(updated)
+                          }}
+                          className="w-full h-8 border rounded px-2 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary"
+                        >
+                          <option value="Initial Consultation" className="bg-white dark:bg-slate-900">Initial Consultation</option>
+                          <option value="Follow-up" className="bg-white dark:bg-slate-900">Follow-up</option>
+                          <option value="Procedure Consultation" className="bg-white dark:bg-slate-900">Procedure Consultation</option>
+                          <option value="Emergency" className="bg-white dark:bg-slate-900">Emergency</option>
+                          <option value="Online" className="bg-white dark:bg-slate-900">Online</option>
+                          <option value="Other" className="bg-white dark:bg-slate-900">Other</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Amount (₹) *</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={charge.amount || ""}
+                          onChange={e => {
+                            const updated = [...consultantCharges]
+                            updated[idx].amount = Math.max(0, parseFloat(e.target.value) || 0)
+                            setConsultantCharges(updated)
+                          }}
+                          className="w-full h-8 border rounded px-2 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 font-mono text-right focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Remarks</label>
+                        <input
+                          type="text"
+                          placeholder="Remarks..."
+                          value={charge.remarks || ""}
+                          onChange={e => {
+                            const updated = [...consultantCharges]
+                            updated[idx].remarks = e.target.value
+                            setConsultantCharges(updated)
+                          }}
+                          className="w-full h-8 border rounded px-2 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {consultantCharges.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic text-center py-4 bg-slate-50/20 dark:bg-slate-900/10 rounded-lg border border-dashed border-slate-200">
+                    No doctor consultation fees added.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
             <Card className="glass-panel border-slate-200 shadow-xl sticky top-6 bg-slate-50/50 dark:bg-slate-900/30">
               <CardHeader className="border-b px-5 py-4">
                 <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
@@ -1204,12 +1821,36 @@ export function BillingWizardPage() {
                   </div>
                 </div>
 
+                {/* Additional Charges Input */}
+                <div className="border-t pt-4 space-y-3">
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Additional Charges
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-slate-500 uppercase">Amount (₹)</label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      min={0}
+                      value={additionalCharges || ""}
+                      onChange={e => setAdditionalCharges(Math.max(0, Number(e.target.value) || 0))}
+                      className="h-8 text-xs font-mono text-right font-bold bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100"
+                    />
+                  </div>
+                </div>
+
                 {/* Calculations summary block */}
                 <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-xl p-4 space-y-2 text-xs">
                   <div className="flex justify-between text-slate-600 dark:text-slate-350">
                     <span className="font-semibold">Subtotal:</span>
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
+                  {additionalCharges > 0 && (
+                    <div className="flex justify-between text-slate-600 dark:text-slate-300 font-bold">
+                      <span>Additional Charges:</span>
+                      <span>{formatCurrency(additionalCharges)}</span>
+                    </div>
+                  )}
                   {discount > 0 && (
                     <div className="flex justify-between text-emerald-600 dark:text-emerald-455 font-bold">
                       <span className="flex items-center gap-0.5">Discount:</span>
@@ -1435,14 +2076,14 @@ export function BillingWizardPage() {
                       </h2>
                     </div>
                   </div>
-                  <p className="text-[11px] text-slate-500 italic font-medium leading-none">
+                  <p className="text-xs text-slate-500 italic font-medium leading-none">
                     Doctor-led. Structured systems. Personal touch.
                   </p>
-                  <p className="text-[10px] text-slate-500 mt-2 font-medium">
-                    No 15, Healthcare Colony, GST Road, Chennai, Tamil Nadu
+                  <p className="text-sm text-slate-500 mt-2 font-medium">
+                    14,Arunachalam Rd, next to VB world, Saligramam, Chennai, Tamil Nadu 600093
                   </p>
-                  <p className="text-[10px] text-slate-500 leading-none">
-                    GSTIN: 33ASCAS1234F1Z5 · Tel: +91 44 2244 8888 · support@ascasfertility.in
+                  <p className="text-sm text-slate-500 leading-none">
+                    Tel: +91-9345293609 · accumedspecialityclinic@gmail.com
                   </p>
                 </div>
                 <div className="text-right">
@@ -1461,16 +2102,21 @@ export function BillingWizardPage() {
 
               {/* Patient & Doctor Block */}
               <div className="grid grid-cols-2 gap-4 border-b py-5 bg-slate-50/50 dark:bg-slate-900/10 px-4 mt-4 rounded-xl">
-                <div className="space-y-1 text-xs">
-                  <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Patient Details</p>
-                  <p className="text-sm font-extrabold text-slate-850 dark:text-slate-150">{patientName}</p>
+                <div className="space-y-1 text-sm">
+                  <p className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Patient Details</p>
+                  <p className="text-base font-extrabold text-slate-850 dark:text-slate-150">{patientName}</p>
                   <p className="text-slate-500 font-semibold font-mono">File ID: {patientId}</p>
                   <p className="text-slate-500">Age: {age} years</p>
+                  {selectedPackage && (
+                    <p className="text-slate-500">
+                      <span className="font-semibold text-slate-650">Package:</span> {selectedPackage.name}
+                    </p>
+                  )}
                 </div>
-                <div className="text-right space-y-1 text-xs">
-                  <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Clinical details</p>
-                  <p className="text-sm font-bold text-slate-750 dark:text-slate-200">Consultant: {getDoctorName()}</p>
-                  <p className="text-primary font-semibold text-[11px] mt-2">
+                <div className="text-right space-y-1 text-sm">
+                  <p className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Clinical details</p>
+                  <p className="text-base font-bold text-slate-750 dark:text-slate-200">Consultant: {getDoctorName()}</p>
+                  <p className="text-primary font-semibold text-xs mt-2">
                     Format: {billingFormat === "inline" ? "Inline Payment Plan" : "Detailed Statement"}
                   </p>
                 </div>
@@ -1478,9 +2124,9 @@ export function BillingWizardPage() {
 
               {/* Items calculation summary table */}
               <div className="mt-6">
-                <table className="w-full text-xs text-left">
+                <table className="w-full text-sm text-left">
                   <thead>
-                    <tr className="border-b-2 pb-2 text-slate-500 font-bold uppercase text-[10px]">
+                    <tr className="border-b-2 pb-2 text-slate-500 font-bold uppercase text-xs">
                       <th className="pb-2">Billing Description</th>
                       <th className="pb-2 text-center">Qty</th>
                       <th className="pb-2 text-right">Price</th>
@@ -1546,96 +2192,110 @@ export function BillingWizardPage() {
                         </td>
                       </tr>
                     ))}
+
+                    {/* Additional Charges row */}
+                    {additionalCharges > 0 && (
+                      <tr>
+                        <td className="py-3 pr-4">
+                          <p className="font-bold text-slate-750 dark:text-slate-200">Additional Charges</p>
+                          <p className="text-[10px] text-muted-foreground">Miscellaneous Consumables</p>
+                        </td>
+                        <td className="py-3 text-center font-bold">1</td>
+                        <td className="py-3 text-right font-bold text-slate-750 dark:text-slate-200">
+                          {formatCurrency(additionalCharges)}
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Consultant Charges rows */}
+                    {consultantCharges && consultantCharges.length > 0 && (
+                      <tr>
+                        <td colSpan={3} className="pt-4 pb-1 border-b text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left bg-slate-50/50 dark:bg-slate-900/10 px-2">
+                          Consultant Consultation Fees
+                        </td>
+                      </tr>
+                    )}
+                    {consultantCharges?.map((charge, idx) => (
+                      <tr key={`consult-${idx}`}>
+                        <td className="py-3 pr-4 text-left">
+                          <p className="font-bold text-teal-800 dark:text-teal-400">{charge.doctorName}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {charge.type} {charge.remarks ? `· ${charge.remarks}` : ""}
+                          </p>
+                        </td>
+                        <td className="py-3 text-center font-bold">1</td>
+                        <td className="py-3 text-right font-bold text-teal-850 dark:text-teal-300">
+                          {formatCurrency(charge.amount)}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
 
-              {/* Inclusions & Exclusions — two-column balanced layout */}
-              {(selectedPackage.inclusionsList?.length || selectedPackage.freeMonitoringList?.length || exclusions.length) ? (
-                <div className="mt-6 grid grid-cols-2 gap-4">
+              {/* Inclusions & Exclusions — single or multi-column layout without Inclusions */}
+              {(selectedPackage.freeMonitoringList?.length || selectedPackage.policiesList?.length) ? (
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedPackage.freeMonitoringList && selectedPackage.freeMonitoringList.length > 0 && (
+                    <div className="border border-blue-200 bg-blue-50/30 p-3 rounded-xl">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700 mb-2 flex items-center gap-1">
+                        <span>★</span> Free Monitoring
+                      </p>
+                      <ul className="list-none space-y-1">
+                        {selectedPackage.freeMonitoringList.map((inc, i) => (
+                          <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-700">
+                            <span className="mt-0.5 shrink-0 h-3.5 w-3.5 bg-blue-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold">★</span>
+                            <span className="leading-snug">{inc}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                  {/* LEFT: Inclusions and Free Monitoring */}
-                  <div className="flex flex-col gap-4">
-                    {selectedPackage.inclusionsList && selectedPackage.inclusionsList.length > 0 && (
-                      <div className="border border-emerald-200 bg-emerald-50/30 p-3 rounded-xl">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 mb-2 flex items-center gap-1">
-                          <span>✓</span> Inclusions (All Covered)
-                        </p>
-                        <ul className="list-none space-y-1">
-                          {selectedPackage.inclusionsList.map((inc, i) => (
-                            <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-700">
-                              <span className="mt-0.5 shrink-0 h-3.5 w-3.5 bg-emerald-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold">✓</span>
-                              <span className="leading-snug">{inc}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {selectedPackage.freeMonitoringList && selectedPackage.freeMonitoringList.length > 0 && (
-                      <div className="border border-blue-200 bg-blue-50/30 p-3 rounded-xl">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700 mb-2 flex items-center gap-1">
-                          <span>★</span> Free Monitoring
-                        </p>
-                        <ul className="list-none space-y-1">
-                          {selectedPackage.freeMonitoringList.map((inc, i) => (
-                            <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-700">
-                              <span className="mt-0.5 shrink-0 h-3.5 w-3.5 bg-blue-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold">★</span>
-                              <span className="leading-snug">{inc}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* RIGHT: Exclusions and Policies */}
-                  <div className="flex flex-col gap-4">
-                    {exclusions.length > 0 && (
-                      <div className="border border-rose-200 bg-rose-50/30 p-3 rounded-xl">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-rose-700 mb-2 flex items-center gap-1">
-                          <span>✕</span> Exclusions (Billed Separately)
-                        </p>
-                        <ul className="list-none space-y-1">
-                          {exclusions.map((excl, i) => (
-                            <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-600">
-                              <span className="mt-0.5 shrink-0 h-3.5 w-3.5 bg-rose-400 text-white rounded-full flex items-center justify-center text-[8px] font-bold">✕</span>
-                              <span className="leading-snug">{excl}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {selectedPackage.policiesList && selectedPackage.policiesList.length > 0 && (
-                      <div className="border border-slate-200 bg-slate-50/50 p-3 rounded-xl">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-1">
-                          <span>ℹ</span> Storage Policy
-                        </p>
-                        <ul className="list-disc pl-4 space-y-1">
-                          {selectedPackage.policiesList.map((pol, i) => (
-                            <li key={i} className="text-[11px] text-slate-600 leading-snug">
-                              {pol}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-
+                  {selectedPackage.policiesList && selectedPackage.policiesList.length > 0 && (
+                    <div className="border border-slate-200 bg-slate-50/50 p-3 rounded-xl">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-1">
+                        <span>ℹ</span> Storage Policy
+                      </p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        {selectedPackage.policiesList.map((pol, i) => (
+                          <li key={i} className="text-[11px] text-slate-600 leading-snug">
+                            {pol}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               ) : null}
 
-
-
               {/* Calculations Totals block */}
               <div className="mt-6 border-t-2 border-slate-100 pt-4 flex justify-end">
-                <div className="w-64 space-y-2 text-xs">
+                <div className="w-64 space-y-2 text-sm">
                   
-                  {billingFormat === "detailed" && (
+                  <div className="flex justify-between text-slate-500">
+                    <span className="font-semibold">Subtotal:</span>
+                    <span>{formatCurrency(subtotal)}</span>
+                  </div>
+
+                  {additionalCharges > 0 && (
                     <div className="flex justify-between text-slate-500">
-                      <span className="font-semibold">Subtotal:</span>
-                      <span>{formatCurrency(subtotal)}</span>
+                      <span>Additional Charges:</span>
+                      <span>{formatCurrency(additionalCharges)}</span>
+                    </div>
+                  )}
+
+                  {totalConsultantCharges > 0 && (
+                    <div className="flex justify-between text-slate-500">
+                      <span>Consultant Charges:</span>
+                      <span>{formatCurrency(totalConsultantCharges)}</span>
+                    </div>
+                  )}
+
+                  {totalGst > 0 && (
+                    <div className="flex justify-between text-slate-500">
+                      <span>GST / Tax:</span>
+                      <span>{formatCurrency(totalGst)}</span>
                     </div>
                   )}
                   
@@ -1646,7 +2306,7 @@ export function BillingWizardPage() {
                     </div>
                   )}
                   
-                  <div className="flex justify-between text-base font-extrabold text-primary border-t pt-2">
+                  <div className="flex justify-between text-lg font-extrabold text-primary border-t pt-2">
                     <span>GRAND TOTAL:</span>
                     <span>{formatCurrency(grandTotal)}</span>
                   </div>
@@ -1654,8 +2314,8 @@ export function BillingWizardPage() {
               </div>
 
               {/* Billing Rule Disclaimer Note (MUST appear on every bill) */}
-              <div className="mt-6 border-t pt-4 text-[10px] text-slate-500 bg-slate-50/60 p-3.5 rounded-xl border border-slate-200">
-                <p className="font-bold uppercase text-[9px] tracking-wide text-slate-600 mb-1">Clinic Billing Rule:</p>
+              <div className="mt-6 border-t pt-4 text-xs text-slate-500 bg-slate-50/60 p-3.5 rounded-xl border border-slate-200">
+                <p className="font-bold uppercase text-[11px] tracking-wide text-slate-600 mb-1">Clinic Billing Rule:</p>
                 <p className="italic leading-normal">
                   Consultation and monitoring scans included in OPU / egg collection packages and FET packages should not be billed separately. Room stay is optional unless specifically advised.
                 </p>
@@ -1667,7 +2327,7 @@ export function BillingWizardPage() {
               </div>
 
               {/* Payment Status Line */}
-              <div className="mt-4 flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b pb-4">
+              <div className="mt-4 flex justify-between items-center text-xs font-bold uppercase tracking-wider text-slate-500 border-b pb-4">
                 <span>Payment status:</span>
                 <span className="text-amber-600">Pending Reconciliation</span>
               </div>
@@ -1675,21 +2335,21 @@ export function BillingWizardPage() {
               </div>{/* end flex-grow */}
 
               {/* Signatures block — pinned to bottom */}
-              <div className="mt-8 grid grid-cols-2 gap-12 text-xs">
+              <div className="mt-8 grid grid-cols-2 gap-12 text-sm">
                 <div className="text-center space-y-6">
                   <div className="h-10" />
                   <div className="border-t border-dashed border-slate-300" />
-                  <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider">Patient / Guardian Signature</p>
+                  <p className="text-slate-400 font-bold text-[11px] uppercase tracking-wider">Patient / Guardian Signature</p>
                 </div>
                 <div className="text-center space-y-6">
                   <div className="h-10" />
                   <div className="border-t border-dashed border-slate-300" />
-                  <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider">Authorized Signatory / Reception Desk</p>
+                  <p className="text-slate-400 font-bold text-[11px] uppercase tracking-wider">Authorized Signatory / Reception Desk</p>
                 </div>
               </div>
 
               {/* Footer stamp */}
-              <div className="mt-4 border-t pt-2 text-center text-[9px] text-slate-400 font-medium leading-relaxed uppercase tracking-wider">
+              <div className="mt-4 border-t pt-2 text-center text-[11px] text-slate-400 font-medium leading-relaxed uppercase tracking-wider">
                 Computer Generated Invoice Slip · ASCAS Fertility &amp; Women's Center · GST Road, Chennai
               </div>
             </div>

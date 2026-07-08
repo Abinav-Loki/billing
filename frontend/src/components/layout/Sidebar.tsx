@@ -12,7 +12,8 @@ import {
   Settings,
   LogOut,
   Heart,
-  X
+  X,
+  UserCheck
 } from "lucide-react"
 
 export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean, setIsOpen?: (val: boolean) => void }) {
@@ -24,6 +25,7 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean, setIsOpen?: (
     { name: "New Bill", to: "/billing/new", icon: PlusCircle },
     { name: "Bills", to: "/bills", icon: FileText },
     { name: "Packages", to: "/packages", icon: Boxes },
+    { name: "Doctor Earnings", to: "/doctors", icon: UserCheck },
     { name: "Reports", to: "/reports", icon: BarChart3 },
     ...(user?.role === "Admin"
       ? [{ name: "Users", to: "/users", icon: UserCog }]

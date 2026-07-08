@@ -11,7 +11,7 @@ app.use(cors())
 app.use(express.json())
 
 // In-Memory Mock Data Stores (Syncs with the Frontend schemas)
-let patients = [
+let patients: any[] = [
   {
     id: "PAT-001",
     uhid: "UHID-2026-0001",
@@ -42,7 +42,7 @@ let patients = [
   }
 ]
 
-let bills = [
+let bills: any[] = [
   {
     billNo: "BILL-2026-0001",
     uhid: "UHID-2026-0001",
@@ -167,6 +167,19 @@ app.post("/api/bills", (req: Request, res: Response) => {
   }
   bills.unshift(newBill)
   res.status(201).json(newBill)
+})
+
+app.put("/api/bills/:billNo", (req: Request, res: Response) => {
+  const { billNo } = req.params
+  const idx = bills.findIndex(b => b.billNo === billNo)
+  if (idx !== -1) {
+    bills[idx] = {
+      ...bills[idx],
+      ...req.body
+    }
+    return res.json(bills[idx])
+  }
+  return res.status(404).json({ error: "Bill not found" })
 })
 
 // Packages Endpoint

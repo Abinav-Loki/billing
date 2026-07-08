@@ -20,6 +20,8 @@ import AddOnsPage from "./pages/addons/AddOnsPage"
 import ReportsPage from "./pages/reports/ReportsPage"
 import UsersPage from "./pages/users/UsersPage"
 import SettingsPage from "./pages/settings/SettingsPage"
+import { DoctorEarningsPage } from "./pages/doctors/DoctorEarningsPage"
+
 
 // Empty state states
 import { ShieldAlert, FileQuestion } from "lucide-react"
@@ -84,6 +86,7 @@ export function App() {
                 <Route path="/packages" element={<PackagesPage />} />
                 <Route path="/addons" element={<AddOnsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/doctors" element={<DoctorEarningsPage />} />
                 
                 {/* Admin Only Route */}
                 <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
